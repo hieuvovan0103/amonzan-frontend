@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { supabase } from "@/lib/supabase";
+import { BASE_URL } from "@/lib/apiClient";
+import type { Session } from "@supabase/supabase-js";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -10,7 +12,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const fetchProfile = async (session: Session) => {
       try {
-        const res = await fetch('http://127.0.0.1:3001/auth/me', {
+        const res = await fetch(`${BASE_URL}/auth/me`, {
           headers: {
             "Authorization": `Bearer ${session.access_token}`
           }
@@ -34,7 +36,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         
         // Đảm bảo user tạo qua Google cũng được lưu vào Backend PostgreSQL một cách tự động
         if (event === 'SIGNED_IN') {
-           fetch('http://127.0.0.1:3001/auth/bootstrap-profile', {
+           fetch(`${BASE_URL}/auth/bootstrap-profile`, {
              method: 'POST',
              headers: {
                "Content-Type": "application/json",

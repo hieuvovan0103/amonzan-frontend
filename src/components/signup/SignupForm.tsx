@@ -1,7 +1,7 @@
 "use client";
 
 import InputField from "@/components/signup/InputField";
-import { supabase } from "@/lib/supabase";
+import { BASE_URL } from "@/lib/apiClient";
 
 export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -33,7 +33,7 @@ export default function SignupForm() {
           const mobile = formData.get("mobile") as string;
           
           // Gửi request API đến NestJS để tạo Profile vào các Public Table
-          const res = await fetch("http://localhost:3001/auth/bootstrap-profile", {
+          const res = await fetch(`${BASE_URL}/auth/bootstrap-profile`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
