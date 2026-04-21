@@ -2,6 +2,7 @@
 
 import InputField from "@/components/signup/InputField";
 import { BASE_URL } from "@/lib/apiClient";
+import { supabase } from "@/lib/supabase";
 
 export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
