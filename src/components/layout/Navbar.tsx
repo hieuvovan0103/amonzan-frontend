@@ -43,7 +43,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4 flex-shrink-0 text-[14px] font-semibold">
-          {!isInitialized ? null : user ? (
+          {isInitialized && user ? (
             <div className="flex items-center gap-4">
               {isAdmin && (
                 <Link

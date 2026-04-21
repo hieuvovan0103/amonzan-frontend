@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Category } from "@/types/category";
 
 type CategoryCardProps = {
@@ -21,11 +22,13 @@ export default function CategoryCard({ data }: CategoryCardProps) {
 
       <div className="flex-1 flex flex-col justify-between">
         {data.type === "single-image" && (
-          <div className="w-full aspect-[4/5] rounded-[10px] overflow-hidden bg-[#F7F7F7] mt-auto">
-            <img
+          <div className="w-full aspect-[4/5] rounded-[10px] overflow-hidden bg-[#F7F7F7] mt-auto relative">
+            <Image
               src={data.image}
               alt={data.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           </div>
         )}
@@ -35,11 +38,13 @@ export default function CategoryCard({ data }: CategoryCardProps) {
             <div className="grid grid-cols-2 gap-3">
               {data.images.map((img, idx) => (
                 <div key={idx} className="flex flex-col items-center gap-2">
-                  <div className="w-full aspect-square rounded-[8px] overflow-hidden bg-[#F7F7F7]">
-                    <img
+                  <div className="w-full aspect-square rounded-[8px] overflow-hidden bg-[#F7F7F7] relative">
+                    <Image
                       src={img.url}
                       alt={img.label}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12vw"
                     />
                   </div>
                   <span className="text-[13px] font-medium text-[#222222]">
