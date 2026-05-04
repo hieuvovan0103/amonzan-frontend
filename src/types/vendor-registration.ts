@@ -1,0 +1,1 @@
+export type VendorPartnerType = "individual" | "business";

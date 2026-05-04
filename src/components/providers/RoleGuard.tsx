@@ -9,49 +9,67 @@ type RoleGuardProps = {
   allowedRoles: string[];
 };
 
+function getCurrentRoles(profile: any) {
+  return (
+    profile?.user_roles
+      ?.map((userRole: any) => {
+        if (Array.isArray(userRole.roles)) {
+          return userRole.roles[0]?.role_name;
+        }
+
+        return userRole.roles?.role_name;
+      })
+      .filter(Boolean) || []
+  );
+}
+
+function hasApprovedVendorProfile(profile: any) {
+  const shopProfiles = Array.isArray(profile?.shop_profiles)
+    ? profile.shop_profiles
+    : profile?.shop_profiles
+      ? [profile.shop_profiles]
+      : [];
+
+  return shopProfiles.some(
+    (shopProfile: any) => shopProfile?.verification_status === "VERIFIED"
+  );
+}
+
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const { isInitialized, profile, session } = useAuthStore();
   const router = useRouter();
 
+  const isVendorOnlyRoute =
+    allowedRoles.length > 0 &&
+    allowedRoles.every((role) => role === "VENDOR" || role === "SHOP_OWNER");
+
+  const currentRoles = getCurrentRoles(profile);
+  const matchesRole = allowedRoles.some((role) => currentRoles.includes(role));
+  const accessAllowed =
+    matchesRole && (!isVendorOnlyRoute || hasApprovedVendorProfile(profile));
+
   useEffect(() => {
-    if (isInitialized) {
-      if (!session) {
-        // Chưa đăng nhập, đá về trang chủ
-        router.push("/");
-        return;
-      }
-
-      if (profile && profile.user_roles) {
-        console.log("🛡️ [RoleGuard] Profile data:", profile);
-        // Kiểm tra xem user có chứa role nằm trong allowedRoles không
-        // Chú ý: phòng trường hợp .roles trả về mảng (mặc dù cấu trúc là 1 object)
-        const currentRoles = profile.user_roles.map((ur: any) => {
-           if (Array.isArray(ur.roles)) return ur.roles[0]?.role_name;
-           return ur.roles?.role_name;
-        }).filter(Boolean);
-        
-        console.log("🛡️ [RoleGuard] currentRoles extracted:", currentRoles);
-        
-        const hasAccess = allowedRoles.some(role => currentRoles.includes(role));
-        
-        if (!hasAccess) {
-          // Có đăng nhập nhưng không có quyền, đá về trang chủ hoặc trang báo lỗi
-          router.push("/");
-        }
-      }
+    if (!isInitialized) {
+      return;
     }
-  }, [isInitialized, session, profile, allowedRoles, router]);
 
-  // Trong lúc chưa init (đang check session) hoặc đang check profile, hiện loading rỗng hoặc skeleton
-  if (!isInitialized || !session || !profile) return null;
+    if (!session) {
+      router.push("/");
+      return;
+    }
 
-  const currentRoles = profile.user_roles.map((ur: any) => {
-     if (Array.isArray(ur.roles)) return ur.roles[0]?.role_name;
-     return ur.roles?.role_name;
-  }).filter(Boolean);
-  const hasAccess = allowedRoles.some((role: string) => currentRoles.includes(role));
+    if (profile && !accessAllowed) {
+      router.push("/");
+    }
+  }, [accessAllowed, isInitialized, profile, router, session]);
 
-  if (!hasAccess) return null;
+  if (!isInitialized || !session || !profile) {
+    return null;
+  }
+
+  if (!accessAllowed) {
+    return null;
+  }
 
   return <>{children}</>;
 }

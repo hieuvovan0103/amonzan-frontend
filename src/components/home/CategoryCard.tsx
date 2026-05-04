@@ -1,87 +1,30 @@
-import Image from "next/image";
-import { Category } from "@/types/category";
+import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 
 type CategoryCardProps = {
-  data: Category;
+  category: {
+    id: number;
+    name: string;
+    count: string;
+    icon: LucideIcon;
+  };
 };
 
-export default function CategoryCard({ data }: CategoryCardProps) {
+export default function CategoryCard({ category }: CategoryCardProps) {
+  const Icon = category.icon;
+
   return (
-    <div className="bg-white rounded-[18px] border border-[#E6E6E6] p-5 shadow-[0_1px_2px_rgba(15,17,17,0.06),_0_4px_14px_rgba(15,17,17,0.05)] hover:shadow-[0_6px_20px_rgba(15,17,17,0.10)] transition-shadow duration-300 flex flex-col h-full cursor-pointer group">
-      <div className="mb-4">
-        <h3 className="text-[20px] font-semibold text-[#222222] leading-[1.3] tracking-[-0.01em]">
-          {data.title}
-        </h3>
-
-        {data.subtitle && (
-          <p className="text-[13px] text-[#6B7280] mt-1 leading-[1.4]">
-            {data.subtitle}
-          </p>
-        )}
+    <Link
+      href={`/products?category=${encodeURIComponent(category.name)}`}
+      className="group flex cursor-pointer flex-col items-center rounded-sm border border-gray-200 bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#FF9900] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+    >
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-gray-50 text-gray-900 transition-colors group-hover:bg-[#FF9900] group-hover:text-white">
+        <Icon className="h-8 w-8" />
       </div>
 
-      <div className="flex-1 flex flex-col justify-between">
-        {data.type === "single-image" && (
-          <div className="w-full aspect-[4/5] rounded-[10px] overflow-hidden bg-[#F7F7F7] mt-auto relative">
-            <Image
-              src={data.image}
-              alt={data.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            />
-          </div>
-        )}
+      <h3 className="mb-1 font-semibold text-gray-900">{category.name}</h3>
 
-        {data.type === "split-image" && (
-          <div className="flex flex-col gap-6 mt-auto">
-            <div className="grid grid-cols-2 gap-3">
-              {data.images.map((img, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2">
-                  <div className="w-full aspect-square rounded-[8px] overflow-hidden bg-[#F7F7F7] relative">
-                    <Image
-                      src={img.url}
-                      alt={img.label}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12vw"
-                    />
-                  </div>
-                  <span className="text-[13px] font-medium text-[#222222]">
-                    {img.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              {data.links.map((link, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="text-[13px] font-medium text-[#007185] hover:text-[#E47911] hover:underline text-center"
-                >
-                  {link}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {data.type === "text-grid" && (
-          <div className="grid grid-cols-2 gap-y-12 gap-x-4 my-auto pt-8">
-            {data.links.map((link, idx) => (
-              <a
-                key={idx}
-                href="#"
-                className="text-[14px] font-medium text-[#222222] hover:text-[#E47911] hover:underline flex items-center justify-center p-4 bg-[#F7F7F7] rounded-[10px] transition-colors"
-              >
-                {link}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      <p className="text-sm text-gray-500">{category.count} sản phẩm</p>
+    </Link>
   );
 }

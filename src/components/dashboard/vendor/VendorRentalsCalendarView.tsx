@@ -62,9 +62,8 @@ export default function VendorRentalsCalendarView({
                         ))}
 
                         {events.map((event) => (
-                            <>
+                            <div key={event.id} className="contents">
                                 <div
-                                    key={`label-${event.id}`}
                                     className="p-3 text-[13px] font-medium border-r border-b border-[#E6E6E6]"
                                 >
                                     {event.title}
@@ -81,7 +80,7 @@ export default function VendorRentalsCalendarView({
                                         />
                                     );
                                 })}
-                            </>
+                            </div>
                         ))}
                     </div>
                 </div>

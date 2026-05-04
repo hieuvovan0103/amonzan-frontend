@@ -22,5 +22,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
+
+    // Import dynamically để tránh circular dependency
+    const { useToastStore } = await import('@/stores/useToastStore');
+    useToastStore.getState().show('Đã đăng xuất thành công. Hẹn gặp lại!', 'success', 3000);
+
+    // Redirect về trang chủ
+    window.location.href = '/products';
   },
 }));
+

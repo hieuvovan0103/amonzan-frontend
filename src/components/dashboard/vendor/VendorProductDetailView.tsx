@@ -1,21 +1,66 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Edit2, RefreshCw, Trash2 } from "lucide-react";
-import { VendorProduct, VendorProductStatus } from "@/types/vendor";
+import { ChevronLeft, Edit2, RefreshCw, Trash2, Loader2 } from "lucide-react";
+import { ApiProduct, VendorProductStatus } from "@/types/vendor";
+import { updateVendorProductStatus } from "@/lib/api/vendor";
+import { useToastStore } from "@/stores/useToastStore";
 
 type VendorProductDetailViewProps = {
-  product: VendorProduct;
+  product: ApiProduct;
   onBack: () => void;
+  onUpdate: () => void;
 };
 
 export default function VendorProductDetailView({
   product,
   onBack,
+  onUpdate,
 }: VendorProductDetailViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [status, setStatus] = useState<VendorProductStatus>(product.status);
-  const [stock, setStock] = useState(product.stock);
+  const [isSaving, setIsSaving] = useState(false);
+  const { show: showToast } = useToastStore();
+
+  const totalStock = product.product_variants?.reduce((sum, v) => sum + v.available_stock, 0) || 0;
+  const basePrice = product.product_variants?.[0]?.base_daily_rate || 0;
+  const primaryImage = product.product_images?.find(i => i.is_primary)?.image_url 
+      || product.product_images?.[0]?.image_url 
+      || "https://placehold.co/400x500?text=No+Image";
+
+  const handleDelete = async () => {
+    if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm này? Sản phẩm sẽ được chuyển sang trạng thái lưu trữ.")) return;
+    
+    setIsSaving(true);
+    try {
+      await updateVendorProductStatus(product.product_id, "ARCHIVED");
+      showToast("Đã xóa sản phẩm thành công", "success");
+      onUpdate();
+      onBack();
+    } catch (error: any) {
+      showToast(error.message || "Lỗi khi xóa sản phẩm", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (status !== product.status) {
+      setIsSaving(true);
+      try {
+        await updateVendorProductStatus(product.product_id, status);
+        showToast("Cập nhật trạng thái thành công", "success");
+        onUpdate();
+        setIsEditing(false);
+      } catch (error: any) {
+        showToast(error.message || "Lỗi khi cập nhật trạng thái", "error");
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+        setIsEditing(false);
+    }
+  };
 
   return (
     <div className="flex-1 animate-in slide-in-from-right-4 duration-300">
@@ -32,8 +77,8 @@ export default function VendorProductDetailView({
         <div className="lg:w-[35%] flex flex-col gap-4">
           <div className="w-full aspect-[4/5] bg-[#F7F7F7] rounded-[16px] overflow-hidden border border-[#E6E6E6]">
             <img
-              src={product.image}
-              alt={product.title}
+              src={primaryImage}
+              alt={product.name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -43,13 +88,10 @@ export default function VendorProductDetailView({
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-[24px] font-bold text-[#222222] tracking-[-0.02em] mb-2">
-                {product.title}
+                {product.name}
               </h1>
               <p className="text-[14px] text-[#565959]">
-                Mã sản phẩm: <span className="font-bold">{product.id}</span>
-              </p>
-              <p className="text-[14px] text-[#565959]">
-                Gian hàng: <span className="font-bold">{product.shop}</span>
+                Mã sản phẩm: <span className="font-bold">{product.product_id.split('-')[0]}</span>
               </p>
             </div>
 
@@ -65,7 +107,9 @@ export default function VendorProductDetailView({
 
               <button
                 type="button"
-                className="bg-[#FCF4F4] hover:bg-[#F9E8E8] border border-[#C62828] text-[#C62828] px-4 py-2 rounded-[8px] text-[13px] font-bold flex items-center gap-2"
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="bg-[#FCF4F4] hover:bg-[#F9E8E8] border border-[#C62828] text-[#C62828] px-4 py-2 rounded-[8px] text-[13px] font-bold flex items-center gap-2 disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
                 Xóa
@@ -81,21 +125,20 @@ export default function VendorProductDetailView({
                 </label>
                 <input
                   type="text"
-                  defaultValue={`${product.price} vnđ`}
-                  disabled={!isEditing}
+                  defaultValue={`${new Intl.NumberFormat('vi-VN').format(basePrice)} vnđ`}
+                  disabled
                   className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] outline-none disabled:bg-[#F7F7F7]"
                 />
               </div>
 
               <div>
                 <label className="block text-[13px] font-bold text-[#565959] mb-2">
-                  Tồn kho
+                  Tổng Tồn kho
                 </label>
                 <input
                   type="number"
-                  value={stock}
-                  disabled={!isEditing}
-                  onChange={(e) => setStock(Number(e.target.value))}
+                  value={totalStock}
+                  disabled
                   className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] outline-none disabled:bg-[#F7F7F7]"
                 />
               </div>
@@ -110,9 +153,9 @@ export default function VendorProductDetailView({
                   onChange={(e) => setStatus(e.target.value as VendorProductStatus)}
                   className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] outline-none disabled:bg-[#F7F7F7]"
                 >
-                  <option value="ENABLE">Đang hoạt động</option>
-                  <option value="DISABLE">Đã ẩn</option>
-                  <option value="IN_USE">Đang được thuê</option>
+                  <option value="ACTIVE">Đang hoạt động</option>
+                  <option value="DRAFT">Bản nháp</option>
+                  <option value="ARCHIVED">Lưu trữ</option>
                 </select>
               </div>
             </div>
@@ -121,10 +164,10 @@ export default function VendorProductDetailView({
               <div className="bg-[#F7F7F7] border border-[#E6E6E6] rounded-[12px] p-4">
                 <div className="text-[13px] text-[#565959] mb-1">Đánh giá</div>
                 <div className="text-[20px] font-bold text-[#222222]">
-                  {product.rating.toFixed(1)} / 5
+                  Chưa có
                 </div>
                 <div className="text-[13px] text-[#565959]">
-                  {product.reviews} lượt đánh giá
+                  0 lượt đánh giá
                 </div>
               </div>
 
@@ -147,8 +190,11 @@ export default function VendorProductDetailView({
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                className="bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[14px] px-6 py-2 rounded-[8px]"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[14px] px-6 py-2 rounded-[8px] flex items-center justify-center gap-2"
               >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Lưu thay đổi
               </button>
             </div>

@@ -8,6 +8,7 @@ import OverviewPage from "@/components/dashboard/admin/OverviewPage";
 import AccountsPage from "@/components/dashboard/admin/AccountsPage";
 import OrdersPage from "@/components/dashboard/admin/OrdersPage";
 import ProductsPage from "@/components/dashboard/admin/ProductsPage";
+import VendorVerificationSection from "@/components/dashboard/admin/vendor-verification/VendorVerificationSection";
 import InventoryPage from "@/components/dashboard/admin/InventoryPage";
 import PaymentsPage from "@/components/dashboard/admin/PaymentsPage";
 import DisputesPage from "@/components/dashboard/admin/DisputesPage";
@@ -37,6 +38,11 @@ export default function AdminDashboardShell() {
                         <OrdersPage onSelectOrder={setSelectedOrder} />
                     )}
                     {activeTab === "products" && <ProductsPage />}
+                    {activeTab === "vendor_verification" && (
+                        <div className="p-6">
+                            <VendorVerificationSection />
+                        </div>
+                    )}
                     {activeTab === "inventory" && <InventoryPage />}
                     {activeTab === "payments" && <PaymentsPage />}
                     {activeTab === "disputes" && <DisputesPage />}

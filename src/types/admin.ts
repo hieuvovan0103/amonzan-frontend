@@ -3,6 +3,7 @@ export type AdminTab =
     | "accounts"
     | "orders"
     | "products"
+    | "vendor_verification"
     | "inventory"
     | "payments"
     | "disputes";

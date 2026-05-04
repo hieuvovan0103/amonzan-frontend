@@ -1,4 +1,5 @@
 import { MapPin, ShoppingCart, Star } from "lucide-react";
+import Link from "next/link";
 import { ProductListItem } from "@/types/product";
 
 type ProductCardProps = {
@@ -7,19 +8,21 @@ type ProductCardProps = {
 
 export default function ProductCard({ data }: ProductCardProps) {
     return (
-        <div className="bg-white rounded-[16px] border border-[#E6E6E6] shadow-sm hover:shadow-[0_8px_24px_rgba(15,17,17,0.10)] transition-all duration-300 overflow-hidden group cursor-pointer flex flex-col">
-            <div className="w-full aspect-[4/5] bg-[#F7F7F7] overflow-hidden">
+        <div className="bg-white rounded-sm border border-[#E6E6E6] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(15,17,17,0.10)] hover:border-[#FF9900] transition-all duration-300 overflow-hidden group flex flex-col">
+            <Link href={`/products/${data.slug}`} className="block w-full aspect-[4/5] bg-[#F7F7F7] overflow-hidden">
                 <img
                     src={data.image}
                     alt={data.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-            </div>
+            </Link>
 
             <div className="p-4 flex flex-col flex-1">
-                <h3 className="text-[15px] font-bold text-[#222222] leading-[1.35] line-clamp-2 mb-2">
-                    {data.title}
-                </h3>
+                <Link href={`/products/${data.slug}`}>
+                    <h3 className="text-[15px] font-bold text-[#222222] leading-[1.35] line-clamp-2 mb-2 group-hover:text-[#FF9900] transition-colors">
+                        {data.title}
+                    </h3>
+                </Link>
 
                 <div className="text-[13px] text-[#007185] hover:text-[#E47911] hover:underline mb-2 font-medium">
                     {data.shopName}
@@ -58,7 +61,7 @@ export default function ProductCard({ data }: ProductCardProps) {
 
                     <button
                         type="button"
-                        className="w-full bg-[#FFD814] hover:bg-[#F0C14B] text-[#111111] border border-[#F0C14B] font-bold text-[13px] py-2 rounded-[10px] transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-[#FFD814] hover:bg-[#F0C14B] text-[#111111] border border-[#F0C14B] font-bold text-[13px] py-2 rounded-sm transition-colors flex items-center justify-center gap-2"
                     >
                         <ShoppingCart className="w-4 h-4" />
                         Thêm vào giỏ

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Eye, EyeOff, AlertCircle, X } from "lucide-react";
 import { useAuthModal } from "@/stores/useAuthModal";
 import { supabase } from "@/lib/supabase";
+import { normalizePhoneNumber } from "@/lib/phone";
+import PhoneOtpDialog from "@/components/signup/PhoneOtpDialog";
 
 export default function LoginModal() {
   const { isLoginOpen, closeLogin } = useAuthModal();
@@ -12,13 +14,13 @@ export default function LoginModal() {
   const [visible, setVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [step, setStep] = useState<1 | 2>(1);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     if (isLoginOpen) {
@@ -28,33 +30,14 @@ export default function LoginModal() {
 
     const timeout = setTimeout(() => {
       setVisible(false);
-      setStep(1);
       setPassword("");
       setError("");
+      setSuccess("");
       setShowPassword(false);
     }, 200);
 
     return () => clearTimeout(timeout);
   }, [isLoginOpen]);
-
-  if (!visible && !isLoginOpen) return null;
-
-  const handleContinue = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!loginId.trim()) {
-      setError("Vui lòng nhập số điện thoại hoặc email.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-
-      setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-    }, 600);
-  };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -71,8 +54,13 @@ export default function LoginModal() {
     }
   };
 
-  const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!loginId.trim()) {
+      setError("Vui lòng nhập số điện thoại hoặc email.");
+      return;
+    }
 
     if (!password.trim()) {
       setError("Vui lòng nhập mật khẩu.");
@@ -80,19 +68,61 @@ export default function LoginModal() {
     }
 
     setIsLoading(true);
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: loginId, // We use loginId as email based on the step 1 input
-      password,
-    });
-    setIsLoading(false);
+    setError("");
+    setSuccess("");
 
-    if (authError) {
-      setError("Đăng nhập thất bại: " + authError.message);
-      return;
+    let credentials;
+    const isEmail = loginId.includes("@");
+
+    if (isEmail) {
+        credentials = { email: loginId, password };
+    } else {
+        const normalizedPhoneNumber = normalizePhoneNumber(loginId);
+        if (!normalizedPhoneNumber) {
+            setError("Số điện thoại không hợp lệ.");
+            setIsLoading(false);
+            return;
+        }
+        credentials = { phone: normalizedPhoneNumber, password };
     }
 
-    alert(`Đăng nhập thành công với tài khoản: ${loginId}`);
-    closeLogin();
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword(credentials);
+
+    if (authError) {
+      // Kiểm tra tài khoản có tồn tại không
+      let userExists = false;
+      try {
+          if (isEmail) {
+              const { data: profile } = await supabase
+                  .from('user_profiles')
+                  .select('email')
+                  .eq('email', loginId)
+                  .maybeSingle();
+              if (profile) userExists = true;
+          } else {
+              const normalizedPhone = credentials.phone;
+              const { data: profile } = await supabase
+                  .from('user_profiles')
+                  .select('phone_number')
+                  .eq('phone_number', normalizedPhone)
+                  .maybeSingle();
+              if (profile) userExists = true;
+          }
+      } catch (err) {
+          console.error("Lỗi khi kiểm tra user_profiles:", err);
+      }
+
+      if (!userExists) {
+          setError("Tài khoản không tồn tại.");
+          setIsLoading(false);
+      } else {
+          setError("Mật khẩu không đúng.");
+          setIsLoading(false);
+      }
+    } else {
+      // Thành công
+      window.location.reload();
+    }
   };
 
   return (
@@ -126,18 +156,17 @@ export default function LoginModal() {
           id="login-modal-title"
           className="text-[24px] font-bold text-[#222222] mb-6 tracking-[-0.02em]"
         >
-          {step === 1 ? "Đăng nhập hoặc tạo tài khoản" : "Đăng nhập"}
+          Đăng nhập
         </h1>
 
-        <form onSubmit={step === 1 ? handleContinue : handleLogin}>
-          {step === 1 ? (
+        <form onSubmit={handleLogin}>
             <div>
               <div className="flex flex-col mb-4">
                 <label
                   htmlFor="loginId"
                   className="text-[14px] font-medium text-[#222222] mb-1.5"
                 >
-                  Nhập số điện thoại hoặc email
+                  Số điện thoại hoặc email
                 </label>
 
                 <input
@@ -148,16 +177,60 @@ export default function LoginModal() {
                     setLoginId(e.target.value);
                     if (error) setError("");
                   }}
-                  className={`w-full border rounded-[12px] px-3 py-2.5 outline-none focus:ring-[3px] focus:ring-[#FF9900]/22 transition-all text-[14px] text-[#222222] shadow-sm ${
-                    error
-                      ? "border-[#C62828] focus:border-[#C62828]"
-                      : "border-[#D5D9D9] focus:border-[#FF9900]"
-                  }`}
+                  className={`w-full border rounded-[12px] px-3 py-2.5 outline-none focus:ring-[3px] focus:ring-[#FF9900]/22 transition-all text-[14px] text-[#222222] shadow-sm border-[#D5D9D9] focus:border-[#FF9900]`}
                   autoFocus
                 />
+              </div>
+
+              <div className="flex flex-col mb-4">
+                <div className="flex justify-between items-end mb-1.5">
+                  <label
+                    htmlFor="password"
+                    className="text-[14px] font-medium text-[#222222]"
+                  >
+                    Mật khẩu
+                  </label>
+
+                  <a
+                    href="#"
+                    className="text-[12px] text-[#007185] hover:text-[#E47911] hover:underline font-medium"
+                  >
+                    Quên mật khẩu?
+                  </a>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (error) setError("");
+                    }}
+                    className={`w-full border rounded-[12px] pl-3 pr-10 py-2.5 outline-none focus:ring-[3px] focus:ring-[#FF9900]/22 transition-all text-[14px] text-[#222222] shadow-sm ${
+                      error
+                        ? "border-[#C62828] focus:border-[#C62828]"
+                        : "border-[#D5D9D9] focus:border-[#FF9900]"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#222222] p-1"
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
 
                 {error && (
-                  <div className="flex items-start gap-1.5 mt-2">
+                  <div className="flex items-start gap-1.5 mt-3">
                     <AlertCircle className="w-4 h-4 text-[#C62828] flex-shrink-0 mt-0.5" />
                     <span className="text-[#C62828] text-[13px] font-medium leading-[1.4]">
                       {error}
@@ -165,15 +238,37 @@ export default function LoginModal() {
                   </div>
                 )}
 
-                {/* Removed mock tip */}
+                {success && (
+                  <div className="flex items-start gap-1.5 mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                    <span className="text-green-700 text-[13px] font-medium leading-[1.4]">
+                      {success}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mb-6">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 accent-[#FF9900]"
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-[13px] text-[#222222] cursor-pointer select-none"
+                >
+                  Lưu thông tin đăng nhập
+                </label>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] disabled:opacity-70 disabled:cursor-not-allowed text-[#111111] font-semibold text-[14px] py-2.5 rounded-[10px] transition-colors shadow-sm mb-4 flex items-center justify-center gap-2"
+                className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] disabled:opacity-70 disabled:cursor-not-allowed text-[#111111] font-semibold text-[14px] py-2.5 rounded-[10px] transition-colors shadow-sm mb-6 flex items-center justify-center gap-2"
               >
-                {isLoading ? "Đang xử lý..." : "Tiếp tục"}
+                {isLoading ? "Đang xử lý..." : "Đăng nhập"}
               </button>
 
               <div className="flex items-center gap-3 mb-4">
@@ -226,109 +321,7 @@ export default function LoginModal() {
                 </Link>
               </p>
             </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E6E6E6]">
-                <span className="text-[14px] text-[#222222] font-medium break-all pr-4">
-                  {loginId}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(1);
-                    setPassword("");
-                    setError("");
-                  }}
-                  className="text-[13px] text-[#007185] hover:text-[#E47911] hover:underline whitespace-nowrap font-medium"
-                >
-                  Thay đổi
-                </button>
-              </div>
-
-              <div className="flex flex-col mb-4">
-                <div className="flex justify-between items-end mb-1.5">
-                  <label
-                    htmlFor="password"
-                    className="text-[14px] font-medium text-[#222222]"
-                  >
-                    Mật khẩu
-                  </label>
-
-                  <a
-                    href="#"
-                    className="text-[12px] text-[#007185] hover:text-[#E47911] hover:underline font-medium"
-                  >
-                    Quên mật khẩu?
-                  </a>
-                </div>
-
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (error) setError("");
-                    }}
-                    autoFocus
-                    className={`w-full border rounded-[12px] pl-3 pr-10 py-2.5 outline-none focus:ring-[3px] focus:ring-[#FF9900]/22 transition-all text-[14px] text-[#222222] shadow-sm ${
-                      error
-                        ? "border-[#C62828] focus:border-[#C62828]"
-                        : "border-[#D5D9D9] focus:border-[#FF9900]"
-                    }`}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#222222] p-1"
-                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="flex items-start gap-1.5 mt-2">
-                    <AlertCircle className="w-4 h-4 text-[#C62828] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#C62828] text-[13px] font-medium leading-[1.4]">
-                      {error}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 mb-6">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 accent-[#FF9900]"
-                />
-                <label
-                  htmlFor="rememberMe"
-                  className="text-[13px] text-[#222222] cursor-pointer select-none"
-                >
-                  Lưu thông tin đăng nhập
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-2.5 rounded-[10px] transition-colors shadow-sm mb-6"
-              >
-                Đăng nhập
-              </button>
-            </div>
-          )}
-        </form>
+          </form>
       </div>
     </div>
   );

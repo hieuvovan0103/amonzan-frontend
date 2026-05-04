@@ -8,6 +8,7 @@ import {
     Settings,
     ShieldAlert,
     ShoppingBag,
+    Store,
     Users,
     Wallet,
 } from "lucide-react";
@@ -80,6 +81,13 @@ export default function AdminSidebar({
                     label="Sản phẩm"
                     active={activeTab === "products"}
                     onClick={() => setActiveTab("products")}
+                    collapsed={!isSidebarOpen}
+                />
+                <AdminNavItem
+                    icon={Store}
+                    label="Duyệt vendor"
+                    active={activeTab === "vendor_verification"}
+                    onClick={() => setActiveTab("vendor_verification")}
                     collapsed={!isSidebarOpen}
                 />
                 <AdminNavItem

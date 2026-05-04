@@ -1,5 +1,6 @@
 export type ProductListItem = {
-    id: number;
+    id: string;
+    slug: string;
     title: string;
     shopName: string;
     rating: number;
