@@ -20,7 +20,7 @@ export default function ProductGallery({
                     <button
                         key={idx}
                         onClick={() => setActiveIndex(idx)}
-                        className={`w-[60px] h-[60px] md:w-[70px] md:h-[70px] rounded-[8px] overflow-hidden border-2 flex-shrink-0 transition-all ${activeIndex === idx
+                        className={`w-[60px] h-[60px] md:w-[70px] md:h-[70px] rounded-[4px] overflow-hidden border-2 flex-shrink-0 transition-all ${activeIndex === idx
                                 ? 'border-[#007185] shadow-sm'
                                 : 'border-[#E6E6E6] hover:border-[#D5D9D9]'
                             }`}
@@ -34,7 +34,7 @@ export default function ProductGallery({
                 ))}
             </div>
 
-            <div className="flex-1 bg-[#F7F7F7] rounded-[16px] overflow-hidden aspect-[4/5] md:aspect-auto md:min-h-[500px]">
+            <div className="flex-1 bg-[#F7F7F7] rounded-[6px] overflow-hidden aspect-[4/5] md:aspect-auto md:min-h-[500px]">
                 <img
                     src={images[activeIndex]}
                     alt={title}

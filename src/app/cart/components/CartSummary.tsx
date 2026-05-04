@@ -25,7 +25,7 @@ export default function CartSummary({
 
     return (
         <div className="w-full lg:w-[320px] flex-shrink-0">
-            <div className="bg-[#FFFFFF] rounded-[16px] border border-[#E6E6E6] shadow-sm p-6 sticky top-[90px]">
+            <div className="bg-[#FFFFFF] rounded-[6px] border border-[#E6E6E6] shadow-sm p-6 sticky top-[90px]">
                 <div className="text-[18px] text-[#222222] mb-6 leading-[1.3]">
                     Tạm tính ({selectedCount} sản phẩm):{' '}
                     <br className="hidden lg:block" />
@@ -37,7 +37,7 @@ export default function CartSummary({
                 <button
                     onClick={handleCheckout}
                     disabled={selectedCount === 0}
-                    className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] disabled:bg-[#F7F7F7] disabled:border-[#E6E6E6] disabled:text-[#6B7280] disabled:cursor-not-allowed text-[#111111] font-semibold text-[14px] py-3 rounded-[999px] transition-colors shadow-sm"
+                    className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] disabled:bg-[#F7F7F7] disabled:border-[#E6E6E6] disabled:text-[#6B7280] disabled:cursor-not-allowed text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
                 >
                     Tiến hành thanh toán
                 </button>

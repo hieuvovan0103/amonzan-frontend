@@ -1,15 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import CartHeader from './components/CartHeader';
 import CartList from './components/CartList';
 import CartSummary from './components/CartSummary';
-import { INITIAL_CART } from '@/data/mockCart';
-import { CartItem } from '@/types/cart';
 import { formatPrice } from '@/app/utils/formatPrice';
+import { useCartStore } from '@/stores/useCartStore';
 
 export default function CartPage() {
-    const [cartItems, setCartItems] = useState<CartItem[]>(INITIAL_CART);
+    const cartItems = useCartStore((state) => state.items);
+    const toggleItem = useCartStore((state) => state.toggleItem);
+    const toggleAll = useCartStore((state) => state.toggleAll);
+    const updateQuantity = useCartStore((state) => state.updateQuantity);
+    const removeItem = useCartStore((state) => state.removeItem);
 
     const { selectedCount, subtotal } = useMemo(() => {
         return cartItems.reduce(
@@ -29,38 +32,37 @@ export default function CartPage() {
         cartItems.length > 0 && cartItems.every((item) => item.selected);
 
     const handleToggleAll = () => {
-        const newState = !allSelected;
-        setCartItems((prev) =>
-            prev.map((item) => ({
-                ...item,
-                selected: newState,
-            }))
-        );
-    };
-
-    const handleToggleItem = (id: number) => {
-        setCartItems((prev) =>
-            prev.map((item) =>
-                item.id === id ? { ...item, selected: !item.selected } : item
-            )
-        );
+        toggleAll(!allSelected);
     };
 
     return (
         <>
             <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 md:py-10">
                 <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
-                    <div className="flex-1 bg-[#FFFFFF] rounded-[16px] border border-[#E6E6E6] shadow-sm p-5 md:p-8">
+                    <div className="flex-1 bg-[#FFFFFF] rounded-[6px] border border-[#E6E6E6] shadow-sm p-5 md:p-8">
                         <CartHeader
                             selectedCount={selectedCount}
                             allSelected={allSelected}
                             onToggleAll={handleToggleAll}
                         />
 
-                        <CartList
-                            cartItems={cartItems}
-                            onToggleItem={handleToggleItem}
-                        />
+                        {cartItems.length > 0 ? (
+                            <CartList
+                                cartItems={cartItems}
+                                onToggleItem={toggleItem}
+                                onUpdateQuantity={updateQuantity}
+                                onRemoveItem={removeItem}
+                            />
+                        ) : (
+                            <div className="py-16 text-center">
+                                <h2 className="mb-2 text-[20px] font-bold text-[#222222]">
+                                    Giỏ hàng của bạn đang trống
+                                </h2>
+                                <p className="text-[14px] text-[#565959]">
+                                    Hãy thêm sản phẩm bạn muốn thuê để xem tại đây.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="border-t border-[#E6E6E6] mt-8 pt-6 flex justify-end">
                             <div className="text-[18px] md:text-[20px] text-[#222222]">

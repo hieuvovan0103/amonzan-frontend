@@ -1,14 +1,18 @@
-import { CartItem } from '@/types/cart';
+import type { CartItem } from '@/types/cart';
 import { formatPrice } from '@/app/utils/formatPrice';
 
 type CartItemCardProps = {
     item: CartItem;
-    onToggleItem: (id: number) => void;
+    onToggleItem: (id: string) => void;
+    onUpdateQuantity: (id: string, quantity: number) => void;
+    onRemoveItem: (id: string) => void;
 };
 
 export default function CartItemCard({
     item,
     onToggleItem,
+    onUpdateQuantity,
+    onRemoveItem,
 }: CartItemCardProps) {
     return (
         <div className="flex gap-4 md:gap-6 items-start">
@@ -21,7 +25,7 @@ export default function CartItemCard({
                 />
             </div>
 
-            <div className="w-[110px] h-[110px] md:w-[160px] md:h-[160px] rounded-[12px] overflow-hidden bg-[#F7F7F7] border border-[#E6E6E6] flex-shrink-0">
+            <div className="w-[110px] h-[110px] md:w-[160px] md:h-[160px] rounded-[6px] overflow-hidden bg-[#F7F7F7] border border-[#E6E6E6] flex-shrink-0">
                 <img
                     src={item.image}
                     alt={item.title}
@@ -42,7 +46,7 @@ export default function CartItemCard({
                         </div>
 
                         <div className="text-[13px] text-[#565959] mb-3">
-                            {item.pricePerDay}vnđ/ngày
+                            {item.pricePerDay} vnđ/ngày
                         </div>
 
                         <div className="flex items-center gap-4 text-[13px] text-[#222222] mb-4 flex-wrap">
@@ -54,10 +58,35 @@ export default function CartItemCard({
                             </span>
                         </div>
 
-                        <div className="mt-auto">
-                            <button className="flex items-center justify-between border border-[#D5D9D9] bg-[#F7F7F7] hover:bg-[#E6E6E6] rounded-[8px] px-4 py-1.5 min-w-[70px] transition-colors shadow-sm text-[14px] font-medium text-[#222222]">
-                                {item.quantity}
-                                <span className="ml-4 text-[10px] text-[#6B7280]">▼</span>
+                        <div className="mt-auto flex flex-wrap items-center gap-3">
+                            <div className="flex items-center rounded-[4px] border border-[#D5D9D9] bg-[#F7F7F7] shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    aria-label="Giảm số lượng"
+                                >
+                                    -
+                                </button>
+                                <span className="min-w-8 px-2 text-center text-[14px] font-medium text-[#222222]">
+                                    {item.quantity}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    aria-label="Tăng số lượng"
+                                >
+                                    +
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => onRemoveItem(item.id)}
+                                className="text-[13px] font-medium text-[#007185] transition-colors hover:text-[#E47911] hover:underline"
+                            >
+                                Xóa
                             </button>
                         </div>
                     </div>
@@ -65,7 +94,7 @@ export default function CartItemCard({
                     <div className="flex md:flex-col justify-end items-end md:justify-start flex-shrink-0">
                         <div className="flex items-baseline gap-1">
                             <span className="text-[22px] md:text-[28px] font-bold text-[#C62828] leading-none">
-                                {formatPrice(item.price)}
+                                {formatPrice(item.price * item.quantity)}
                             </span>
                             <span className="text-[13px] md:text-[14px] font-bold text-[#C62828]">
                                 vnđ

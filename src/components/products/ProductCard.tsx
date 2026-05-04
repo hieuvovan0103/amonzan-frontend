@@ -1,12 +1,36 @@
+"use client";
+
 import { MapPin, ShoppingCart, Star } from "lucide-react";
 import Link from "next/link";
-import { ProductListItem } from "@/types/product";
+import type { ProductListItem } from "@/types/product";
+import { useCartStore } from "@/stores/useCartStore";
+import { useToastStore } from "@/stores/useToastStore";
 
 type ProductCardProps = {
     data: ProductListItem;
 };
 
 export default function ProductCard({ data }: ProductCardProps) {
+    const addItem = useCartStore((state) => state.addItem);
+    const showToast = useToastStore((state) => state.show);
+
+    const priceValue = Number(data.price.replace(/[^\d]/g, "")) || 0;
+
+    const handleAddToCart = () => {
+        addItem({
+            productId: data.id,
+            slug: data.slug,
+            title: data.title,
+            rentDates: "Chưa chọn thời gian thuê",
+            pricePerDay: data.price,
+            size: "Mặc định",
+            color: "Mặc định",
+            price: priceValue,
+            image: data.image,
+        });
+        showToast("Đã thêm sản phẩm vào giỏ hàng.", "success");
+    };
+
     return (
         <div className="bg-white rounded-sm border border-[#E6E6E6] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(15,17,17,0.10)] hover:border-[#FF9900] transition-all duration-300 overflow-hidden group flex flex-col">
             <Link href={`/products/${data.slug}`} className="block w-full aspect-[4/5] bg-[#F7F7F7] overflow-hidden">
@@ -61,6 +85,7 @@ export default function ProductCard({ data }: ProductCardProps) {
 
                     <button
                         type="button"
+                        onClick={handleAddToCart}
                         className="w-full bg-[#FFD814] hover:bg-[#F0C14B] text-[#111111] border border-[#F0C14B] font-bold text-[13px] py-2 rounded-sm transition-colors flex items-center justify-center gap-2"
                     >
                         <ShoppingCart className="w-4 h-4" />

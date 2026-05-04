@@ -21,7 +21,7 @@ export default function RelatedProductsSection({
                         key={item.id}
                         className="w-[160px] md:w-[180px] flex-shrink-0 group cursor-pointer"
                     >
-                        <div className="bg-[#F7F7F7] rounded-[12px] aspect-square overflow-hidden mb-3">
+                        <div className="bg-[#F7F7F7] rounded-[6px] aspect-square overflow-hidden mb-3">
                             <img
                                 src={item.image}
                                 alt={item.title}

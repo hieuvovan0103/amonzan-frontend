@@ -1,5 +1,8 @@
 export type CartItem = {
-    id: number;
+    id: string;
+    productId: string;
+    variantId?: string;
+    slug: string;
     title: string;
     rentDates: string;
     pricePerDay: string;

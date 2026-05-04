@@ -76,11 +76,31 @@ type PublicProductDetailApi = {
     total_stock: number;
     available_stock: number;
   }>;
+  reviews?: Array<{
+    review_id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+  }>;
 };
 
 export type ProductListResult = {
   products: ProductListItem[];
   pagination: PaginationMeta;
+};
+
+export type ProductSizeOption = {
+  variantId: string;
+  name: string;
+  availableStock: number;
+  priceValue: number;
+};
+
+export type ProductReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
 };
 
 export type ProductDetail = {
@@ -93,11 +113,15 @@ export type ProductDetail = {
   priceValue: number;
   description: string[];
   sizes: string[];
+  availableSizes: ProductSizeOption[];
   images: string[];
   categorySlug?: string;
   categoryName?: string;
   location: string;
   storeName: string;
+  shopDescription?: string | null;
+  reviews: ProductReview[];
+  ratingDistribution: Record<1 | 2 | 3 | 4 | 5, number>;
   variants: PublicProductDetailApi["product_variants"];
 };
 
@@ -205,22 +229,45 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
   const availableVariants = (product.product_variants ?? []).filter(
     (variant) => Number(variant.available_stock) > 0,
   );
+  const availableSizes = availableVariants.map((variant) => ({
+    variantId: variant.variant_id,
+    name: variant.variant_name,
+    availableStock: Number(variant.available_stock ?? 0),
+    priceValue: Number(variant.base_daily_rate ?? 0),
+  }));
   const minDailyRate = availableVariants.length
     ? Math.min(...availableVariants.map((variant) => Number(variant.base_daily_rate)))
     : 0;
+  const reviews = (product.reviews ?? []).map((review) => ({
+    id: review.review_id,
+    rating: Number(review.rating ?? 0),
+    comment: review.comment ?? "",
+    createdAt: review.created_at,
+  }));
+  const ratingDistribution = reviews.reduce<Record<1 | 2 | 3 | 4 | 5, number>>(
+    (acc, review) => {
+      const rating = Math.round(review.rating) as 1 | 2 | 3 | 4 | 5;
+      if (rating >= 1 && rating <= 5) {
+        acc[rating] += 1;
+      }
+      return acc;
+    },
+    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  );
 
   return {
     id: product.product_id,
     slug: product.slug,
     title: product.name,
     rating: Number(product.average_rating ?? product.shop_profiles?.rating_average ?? 0),
-    reviewsCount: 0,
+    reviewsCount: reviews.length,
     price: formatPrice(minDailyRate),
     priceValue: minDailyRate,
     description: product.description
       ? product.description.split(/\r?\n/).filter(Boolean)
       : ["Sản phẩm đang được cho thuê trên Amonzan."],
-    sizes: availableVariants.map((variant) => variant.variant_name),
+    sizes: availableSizes.map((size) => size.name),
+    availableSizes,
     images: images.length ? images : [fallbackImage],
     categorySlug: product.categories?.slug,
     categoryName: product.categories?.name,
@@ -228,6 +275,9 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
       .filter(Boolean)
       .join(", "),
     storeName: product.shop_profiles?.shop_name ?? "Amonzan vendor",
+    shopDescription: product.shop_profiles?.description ?? null,
+    reviews,
+    ratingDistribution,
     variants: product.product_variants ?? [],
   };
 }

@@ -1,8 +1,10 @@
-import { CartItem } from '@/types/cart';
+import type { CartItem } from '@/types/cart';
 
 export const INITIAL_CART: CartItem[] = [
     {
-        id: 1,
+        id: 'mock-product-1::One Size Short::Trắng::4 tháng 4 - 10 tháng 4 (6 ngày)',
+        productId: 'mock-product-1',
+        slug: 'mock-product-1',
         title: 'Chân váy Petticoat voan công chúa múa Ballet lưng thun co giãn màu trắng',
         rentDates: '4 tháng 4 - 10 tháng 4 (6 ngày)',
         pricePerDay: '12.000',
@@ -15,7 +17,9 @@ export const INITIAL_CART: CartItem[] = [
         selected: false,
     },
     {
-        id: 2,
+        id: 'mock-product-2::One Size Short::Trắng::4 tháng 4 - 10 tháng 4 (6 ngày)',
+        productId: 'mock-product-2',
+        slug: 'mock-product-2',
         title: 'Chân váy Petticoat voan công chúa múa Ballet lưng thun co giãn màu trắng',
         rentDates: '4 tháng 4 - 10 tháng 4 (6 ngày)',
         pricePerDay: '12.000',

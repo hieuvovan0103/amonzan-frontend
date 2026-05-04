@@ -1,7 +1,5 @@
 import { notFound } from 'next/navigation';
-import BuyBox from './components/BuyBox';
-import ProductGallery from './components/ProductGallery';
-import ProductInfo from './components/ProductInfo';
+import ProductDetailPurchase from './components/ProductDetailPurchase';
 import ProductReviews from './components/ProductReviews';
 import ProductSpecs from './components/ProductSpecs';
 import RelatedProductsSection from './components/RelatedProductsSection';
@@ -32,23 +30,7 @@ export default async function ProductDetailPage({
     return (
         <>
             <main className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mb-12">
-                    <div className="lg:w-[45%]">
-                        <ProductGallery images={product.images} title={product.title} />
-                    </div>
-
-                    <div className="lg:w-[35%] flex flex-col">
-                        <ProductInfo product={product} />
-                    </div>
-
-                    <div className="lg:w-[20%]">
-                        <BuyBox
-                            price={product.price}
-                            location={product.location}
-                            storeName={product.storeName}
-                        />
-                    </div>
-                </div>
+                <ProductDetailPurchase product={product} />
 
                 {relatedProducts.length > 0 && (
                     <RelatedProductsSection
@@ -57,12 +39,9 @@ export default async function ProductDetailPage({
                     />
                 )}
 
-                <ProductSpecs />
+                <ProductSpecs product={product} />
 
-                <ProductReviews
-                    rating={product.rating}
-                    reviewsCount={product.reviewsCount}
-                />
+                <ProductReviews product={product} />
 
                 {relatedProducts.length > 0 && (
                     <RelatedProductsSection

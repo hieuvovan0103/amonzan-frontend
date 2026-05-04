@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Flag } from 'lucide-react';
 import StarRating from './StarRating';
-import type { ProductDetail } from '@/lib/api/products';
+import type { ProductDetail, ProductSizeOption } from '@/lib/api/products';
 
 type ProductInfoProps = {
     product: ProductDetail;
+    selectedSize?: ProductSizeOption;
+    onSelectSize: (size: ProductSizeOption) => void;
+    rentalStart: string;
+    rentalEnd: string;
+    onRentalStartChange: (value: string) => void;
+    onRentalEndChange: (value: string) => void;
 };
 
-export default function ProductInfo({ product }: ProductInfoProps) {
-    const [selectedSize, setSelectedSize] = useState(product.sizes[0] || 'S');
+export default function ProductInfo({
+    product,
+    selectedSize,
+    onSelectSize,
+    rentalStart,
+    rentalEnd,
+    onRentalStartChange,
+    onRentalEndChange,
+}: ProductInfoProps) {
+    const displaySizeOptions = product.availableSizes.filter(
+        (size) => size.name.trim().toLowerCase() !== 'mặc định',
+    );
 
     return (
         <>
@@ -24,7 +39,7 @@ export default function ProductInfo({ product }: ProductInfoProps) {
                     {product.rating}
                 </span>
 
-                <StarRating size="w-4 h-4" />
+                <StarRating size="w-4 h-4" rating={product.rating} />
 
                 <Link
                     href="#danh-gia"
@@ -41,31 +56,37 @@ export default function ProductInfo({ product }: ProductInfoProps) {
                 <span className="text-[14px] font-bold text-[#C62828]">vnđ</span>
             </div>
 
-            <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[14px] font-bold text-[#222222]">
-                        Kích thước:
-                    </span>
-                    <span className="text-[14px] font-medium text-[#222222]">
-                        {selectedSize}
-                    </span>
-                </div>
+            {displaySizeOptions.length > 0 && (
+                <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[14px] font-bold text-[#222222]">
+                            Kích thước:
+                        </span>
+                        <span className="text-[14px] font-medium text-[#222222]">
+                            {selectedSize?.name}
+                        </span>
+                    </div>
 
-                <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
-                        <button
-                            key={size}
-                            onClick={() => setSelectedSize(size)}
-                            className={`px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-all ${selectedSize === size
-                                    ? 'border-[#FF9900] bg-[#FF9900]/10 text-[#222222] shadow-sm'
-                                    : 'border-[#D5D9D9] bg-white text-[#222222] hover:bg-[#F7F7F7]'
-                                }`}
-                        >
-                            {size}
-                        </button>
-                    ))}
+                    <div className="flex flex-wrap gap-2">
+                        {displaySizeOptions.map((size) => (
+                            <button
+                                key={size.variantId}
+                                type="button"
+                                onClick={() => onSelectSize(size)}
+                                className={`px-3 py-1.5 text-[13px] font-medium rounded-[4px] border transition-all ${selectedSize?.variantId === size.variantId
+                                        ? 'border-[#FF9900] bg-[#FF9900]/10 text-[#222222] shadow-sm'
+                                        : 'border-[#D5D9D9] bg-white text-[#222222] hover:bg-[#F7F7F7]'
+                                    }`}
+                            >
+                                {size.name}
+                                <span className="ml-1 text-[11px] text-[#565959]">
+                                    ({size.availableStock})
+                                </span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="mb-6">
                 <span className="text-[14px] font-bold text-[#222222] block mb-2">
@@ -74,15 +95,18 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
                 <div className="flex items-center gap-2 max-w-[280px]">
                     <input
-                        type="text"
-                        placeholder="--/--/--"
-                        className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
+                        type="date"
+                        value={rentalStart}
+                        onChange={(e) => onRentalStartChange(e.target.value)}
+                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
                     />
                     <span className="text-[#6B7280]">-</span>
                     <input
-                        type="text"
-                        defaultValue="10/03/2024"
-                        className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
+                        type="date"
+                        value={rentalEnd}
+                        min={rentalStart || undefined}
+                        onChange={(e) => onRentalEndChange(e.target.value)}
+                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
                     />
                 </div>
             </div>
