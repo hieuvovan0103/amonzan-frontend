@@ -1,4 +1,4 @@
-import { BASE_URL } from "@/lib/apiClient";
+import { BASE_URL } from "@/lib/config";
 import { formatPrice } from "@/app/utils/formatPrice";
 import type { ProductListItem } from "@/types/product";
 
@@ -136,9 +136,26 @@ export async function getPublicProducts(params?: {
   categorySlug?: string;
   sort?: "newest" | "price_asc" | "price_desc" | "rating_desc";
 }): Promise<ProductListResult> {
-  const res = await fetch(buildUrl("/products", params), {
-    cache: "no-store",
-  });
+  let res: Response;
+
+  try {
+    res = await fetch(buildUrl("/products", params), {
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error("[products] Failed to fetch public products:", error);
+    return {
+      products: [],
+      pagination: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 12,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+  }
 
   if (!res.ok) {
     return {
@@ -166,9 +183,16 @@ export async function getPublicProducts(params?: {
 }
 
 export async function getPublicProductDetail(slug: string): Promise<ProductDetail | null> {
-  const res = await fetch(buildUrl(`/products/${slug}`), {
-    cache: "no-store",
-  });
+  let res: Response;
+
+  try {
+    res = await fetch(buildUrl(`/products/${slug}`), {
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error(`[products] Failed to fetch product detail for "${slug}":`, error);
+    return null;
+  }
 
   if (!res.ok) {
     return null;

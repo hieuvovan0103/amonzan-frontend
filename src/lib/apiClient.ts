@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
+import { BASE_URL } from './config';
 
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export { BASE_URL };
 
 /**
  * Hàm gọi API tùy chỉnh bọc ngoài fetch API mặc định.
