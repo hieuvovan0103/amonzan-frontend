@@ -1,18 +1,10 @@
 import Link from 'next/link';
 import StarRating from './StarRating';
-
-type RelatedProduct = {
-    id: number;
-    title: string;
-    price: string;
-    rating: number;
-    reviewsCount: number;
-    image: string;
-};
+import type { ProductListItem } from '@/types/product';
 
 type RelatedProductsSectionProps = {
     title: string;
-    products: RelatedProduct[];
+    products: ProductListItem[];
 };
 
 export default function RelatedProductsSection({
@@ -38,7 +30,7 @@ export default function RelatedProductsSection({
                         </div>
 
                         <Link
-                            href={`/products/demo-${item.id}`}
+                            href={`/products/${item.slug}`}
                             className="text-[13px] text-[#007185] group-hover:text-[#E47911] hover:underline line-clamp-2 leading-[1.4] mb-1 block"
                         >
                             {item.title}
@@ -47,7 +39,7 @@ export default function RelatedProductsSection({
                         <div className="flex items-center gap-1 mb-1">
                             <StarRating size="w-3.5 h-3.5" emptyLast />
                             <span className="text-[12px] text-[#007185]">
-                                {item.reviewsCount}
+                                {item.reviews}
                             </span>
                         </div>
 
