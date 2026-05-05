@@ -54,6 +54,56 @@ export interface ApiProduct {
   product_variants: ApiVariant[];
 }
 
+export type VendorOrder = {
+  orderId: string;
+  status: string;
+  paymentStatus: string;
+  rentalStart: string;
+  rentalEnd: string;
+  subtotal: number;
+  depositAmount: number;
+  shippingFee: number;
+  discountAmount: number;
+  totalAmount: number;
+  note: string | null;
+  createdAt: string;
+  confirmedAt: string | null;
+  renter: {
+    fullName: string;
+    email: string | null;
+    phoneNumber: string | null;
+    reputationScore: number;
+    penaltyPoints: number;
+    verificationStatus: string;
+  };
+  address: {
+    recipientName: string;
+    phoneNumber: string;
+    fullAddress: string;
+  } | null;
+  payment: {
+    transactionId: string;
+    method: string;
+    amount: number;
+    status: string;
+    provider: string | null;
+    paidAt: string | null;
+  } | null;
+  items: Array<{
+    orderItemId: string;
+    variantId: string;
+    productId: string | null;
+    productSlug: string | null;
+    productName: string;
+    productImage: string | null;
+    variantName: string | null;
+    quantity: number;
+    unitPricePerDay: number;
+    lineSubtotal: number;
+    lineDeposit: number;
+  }>;
+};
+
 export type VendorCalendarEvent = {
   id: number;
   title: string;
@@ -62,4 +112,4 @@ export type VendorCalendarEvent = {
   color: string;
 };
 
-export type VendorTab = "vendor_listings" | "vendor_detail" | "rentals_calendar";
+export type VendorTab = "vendor_listings" | "vendor_detail" | "vendor_orders" | "rentals_calendar" | "shop_settings";

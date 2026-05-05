@@ -159,8 +159,13 @@ export default function VendorRegistrationForm() {
                     </div>
 
                     <VendorTextAreaField
-                        label="Mô tả gian hàng"
-                        placeholder="Giới thiệu ngắn gọn về các loại đồ bạn cho thuê, điểm nổi bật..."
+                        label="Mô tả & chính sách cửa hàng"
+                        placeholder={`Giới thiệu cửa hàng, mặt hàng cho thuê và chính sách chính.
+
+Ví dụ:
+Chính sách thuê: Cọc 30% giá trị sản phẩm.
+Chính sách hoàn trả: Trả đúng ngày đã chọn, trễ hạn tính phí theo ngày.
+Chính sách hư hỏng: Bồi thường theo mức độ hư hại.`}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                     />

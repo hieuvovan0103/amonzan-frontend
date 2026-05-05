@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CartItem } from '@/types/cart';
+import type { CartStockIssue } from '@/lib/cart-stock';
 import CartItemCard from './CartItemCard';
 
 type CartListProps = {
@@ -7,6 +8,7 @@ type CartListProps = {
     onToggleItem: (id: string) => void;
     onUpdateQuantity: (id: string, quantity: number) => void;
     onRemoveItem: (id: string) => void;
+    stockIssues?: CartStockIssue[];
 };
 
 export default function CartList({
@@ -14,6 +16,7 @@ export default function CartList({
     onToggleItem,
     onUpdateQuantity,
     onRemoveItem,
+    stockIssues = [],
 }: CartListProps) {
     return (
         <div>
@@ -24,6 +27,7 @@ export default function CartList({
                         onToggleItem={onToggleItem}
                         onUpdateQuantity={onUpdateQuantity}
                         onRemoveItem={onRemoveItem}
+                        stockIssue={stockIssues.find((issue) => issue.itemId === item.id)}
                     />
 
                     {index < cartItems.length - 1 && (

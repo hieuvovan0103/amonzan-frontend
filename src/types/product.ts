@@ -1,5 +1,6 @@
 export type ProductListItem = {
     id: string;
+    shopId?: string;
     slug: string;
     title: string;
     shopName: string;
@@ -7,6 +8,7 @@ export type ProductListItem = {
     reviews: number;
     price: string;
     image: string;
+    availableStock?: number;
     category?: string;
     location?: string;
 };

@@ -7,7 +7,9 @@ type AddCartItemInput = Omit<CartItem, "id" | "quantity" | "selected"> & {
 };
 
 type CartState = {
+  hasHydrated: boolean;
   items: CartItem[];
+  setHasHydrated: (hasHydrated: boolean) => void;
   addItem: (item: AddCartItemInput) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -25,7 +27,10 @@ function createCartItemId(
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
+      hasHydrated: false,
       items: [],
+
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
       addItem: (item) =>
         set((state) => {
@@ -87,6 +92,9 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "amonzan-cart",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     },
   ),
 );

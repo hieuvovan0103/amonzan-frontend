@@ -7,6 +7,8 @@ import VendorSidebar from "@/components/dashboard/vendor/VendorSidebar";
 import VendorListingsView from "@/components/dashboard/vendor/VendorListingsView";
 import VendorProductDetailView from "@/components/dashboard/vendor/VendorProductDetailView";
 import VendorRentalsCalendarView from "@/components/dashboard/vendor/VendorRentalsCalendarView";
+import VendorShopSettingsView from "@/components/dashboard/vendor/VendorShopSettingsView";
+import VendorOrdersView from "@/components/dashboard/vendor/VendorOrdersView";
 import { MOCK_VENDOR_EVENTS } from "@/data/mockVendorDashboard";
 import { ApiProduct, VendorTab } from "@/types/vendor";
 import { getVendorProducts } from "@/lib/api/vendor";
@@ -16,7 +18,9 @@ import { useEffect, useCallback } from "react";
 const TAB_LABELS: Record<VendorTab, string> = {
     vendor_listings: "Danh sách sản phẩm",
     vendor_detail: "Chi tiết sản phẩm",
+    vendor_orders: "Duyệt đơn thuê",
     rentals_calendar: "Lịch cho thuê",
+    shop_settings: "Cài đặt cửa hàng",
 };
 
 export default function VendorDashboardShell() {
@@ -207,6 +211,14 @@ export default function VendorDashboardShell() {
 
                         {activeTab === "rentals_calendar" && (
                             <VendorRentalsCalendarView events={MOCK_VENDOR_EVENTS} />
+                        )}
+
+                        {activeTab === "vendor_orders" && (
+                            <VendorOrdersView />
+                        )}
+
+                        {activeTab === "shop_settings" && (
+                            <VendorShopSettingsView />
                         )}
                     </main>
                 </div>

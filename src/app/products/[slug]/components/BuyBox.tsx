@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatPrice } from "@/app/utils/formatPrice";
 import type { ProductDetail, ProductSizeOption } from "@/lib/api/products";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -35,6 +36,7 @@ export default function BuyBox({
     const { user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
     const showToast = useToastStore((state) => state.show);
+    const isOutOfStock = !selectedSize || selectedSize.availableStock <= 0;
     const selectedPriceValue = selectedSize?.priceValue ?? product.priceValue;
     const selectedPrice = formatPrice(selectedPriceValue);
     const selectedSizeName = selectedSize?.name ?? product.sizes[0] ?? "Mặc định";
@@ -45,6 +47,11 @@ export default function BuyBox({
         : "Chưa chọn thời gian thuê";
 
     const handleAddToCart = () => {
+        if (isOutOfStock) {
+            showToast("Sản phẩm đã hết hàng. Vui lòng liên hệ cửa hàng.", "error");
+            return;
+        }
+
         if (!hasRentalDates) {
             showToast("Vui lòng chọn ngày thuê trước khi thêm vào giỏ.", "error");
             return;
@@ -56,11 +63,16 @@ export default function BuyBox({
             slug: product.slug,
             title: product.title,
             rentDates,
+            rentalStart,
+            rentalEnd,
             pricePerDay: selectedPrice,
             size: selectedSizeName,
             color: "Mặc định",
             price: selectedPriceValue,
             image: product.images[0] ?? "/file.svg",
+            shopId: product.shopId,
+            shopName: storeName,
+            availableStock: selectedSize?.availableStock,
         });
         showToast(
             shouldShowSelectedSize
@@ -71,6 +83,11 @@ export default function BuyBox({
     };
 
     const handleRentNow = () => {
+        if (isOutOfStock) {
+            window.location.href = `/shop/${product.shopId}`;
+            return;
+        }
+
         if (!user) {
             window.location.href = "/signup";
             return;
@@ -101,25 +118,36 @@ export default function BuyBox({
                 <p>
                     Giao hàng tới{" "}
                     <span className="font-semibold text-[#007185] cursor-pointer hover:text-[#E47911] hover:underline">
-                        {location}
+                        {location || "Chưa cập nhật"}
                     </span>
                 </p>
             </div>
 
             <div className="space-y-3">
-                <button
-                    onClick={handleAddToCart}
-                    className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
-                >
-                    Thêm vào giỏ
-                </button>
+                {isOutOfStock ? (
+                    <Link
+                        href={`/shop/${product.shopId}`}
+                        className="block w-full rounded-[4px] border border-[#007185] bg-white py-3 text-center text-[14px] font-semibold text-[#007185] shadow-sm transition-colors hover:bg-[#F0F8FF]"
+                    >
+                        Liên hệ cửa hàng
+                    </Link>
+                ) : (
+                    <>
+                        <button
+                            onClick={handleAddToCart}
+                            className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                        >
+                            Thêm vào giỏ
+                        </button>
 
-                <button
-                    onClick={handleRentNow}
-                    className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
-                >
-                    Thuê ngay
-                </button>
+                        <button
+                            onClick={handleRentNow}
+                            className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                        >
+                            Thuê ngay
+                        </button>
+                    </>
+                )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-[#E6E6E6] text-[13px] text-[#565959] space-y-2">
@@ -130,16 +158,22 @@ export default function BuyBox({
 
                 <div className="flex justify-between gap-2">
                     <span>Cung cấp bởi</span>
-                    <span className="font-medium text-[#007185] hover:text-[#E47911] hover:underline cursor-pointer text-right">
+                    <Link
+                        href={`/shop/${product.shopId}`}
+                        className="text-right font-medium text-[#007185] hover:text-[#E47911] hover:underline"
+                    >
                         {storeName}
-                    </span>
+                    </Link>
                 </div>
 
                 <div className="flex justify-between gap-2">
-                    <span>Hoàn trả</span>
-                    <span className="font-medium text-[#007185] hover:text-[#E47911] hover:underline cursor-pointer text-right">
-                        Trả hàng trong 7 ngày
-                    </span>
+                    <span>Chính sách</span>
+                    <a
+                        href="#chinh-sach-cua-hang"
+                        className="font-medium text-[#007185] hover:text-[#E47911] hover:underline text-right"
+                    >
+                        Xem chính sách cửa hàng
+                    </a>
                 </div>
             </div>
         </div>

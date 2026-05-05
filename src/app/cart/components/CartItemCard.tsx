@@ -1,11 +1,14 @@
 import type { CartItem } from '@/types/cart';
 import { formatPrice } from '@/app/utils/formatPrice';
+import { getItemRentTotal, getRentalDays } from '@/lib/cart-pricing';
+import type { CartStockIssue } from '@/lib/cart-stock';
 
 type CartItemCardProps = {
     item: CartItem;
     onToggleItem: (id: string) => void;
     onUpdateQuantity: (id: string, quantity: number) => void;
     onRemoveItem: (id: string) => void;
+    stockIssue?: CartStockIssue;
 };
 
 export default function CartItemCard({
@@ -13,15 +16,21 @@ export default function CartItemCard({
     onToggleItem,
     onUpdateQuantity,
     onRemoveItem,
+    stockIssue,
 }: CartItemCardProps) {
+    const rentalDays = getRentalDays(item);
+    const itemTotal = getItemRentTotal(item);
+    const isBlocked = Boolean(stockIssue);
+
     return (
-        <div className="flex gap-4 md:gap-6 items-start">
+        <div className={`flex gap-4 md:gap-6 items-start ${isBlocked ? "opacity-75" : ""}`}>
             <div className="pt-1">
                 <input
                     type="checkbox"
-                    checked={item.selected}
+                    checked={item.selected && !isBlocked}
+                    disabled={isBlocked}
                     onChange={() => onToggleItem(item.id)}
-                    className="w-4 h-4 accent-[#FF9900] cursor-pointer"
+                    className="w-4 h-4 accent-[#FF9900] cursor-pointer disabled:cursor-not-allowed"
                 />
             </div>
 
@@ -46,8 +55,14 @@ export default function CartItemCard({
                         </div>
 
                         <div className="text-[13px] text-[#565959] mb-3">
-                            {item.pricePerDay} vnđ/ngày
+                            {item.pricePerDay} vnđ/ngày x {rentalDays} ngày
                         </div>
+
+                        {stockIssue && (
+                            <div className="mb-3 rounded-[4px] border border-[#F5C2C7] bg-[#FFF5F5] px-3 py-2 text-[13px] font-semibold text-[#842029]">
+                                {stockIssue.message}
+                            </div>
+                        )}
 
                         <div className="flex items-center gap-4 text-[13px] text-[#222222] mb-4 flex-wrap">
                             <span>
@@ -62,8 +77,9 @@ export default function CartItemCard({
                             <div className="flex items-center rounded-[4px] border border-[#D5D9D9] bg-[#F7F7F7] shadow-sm">
                                 <button
                                     type="button"
+                                    disabled={isBlocked}
                                     onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                                     aria-label="Giảm số lượng"
                                 >
                                     -
@@ -73,8 +89,9 @@ export default function CartItemCard({
                                 </span>
                                 <button
                                     type="button"
+                                    disabled={isBlocked}
                                     onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                                     aria-label="Tăng số lượng"
                                 >
                                     +
@@ -94,7 +111,7 @@ export default function CartItemCard({
                     <div className="flex md:flex-col justify-end items-end md:justify-start flex-shrink-0">
                         <div className="flex items-baseline gap-1">
                             <span className="text-[22px] md:text-[28px] font-bold text-[#C62828] leading-none">
-                                {formatPrice(item.price * item.quantity)}
+                                {formatPrice(itemTotal)}
                             </span>
                             <span className="text-[13px] md:text-[14px] font-bold text-[#C62828]">
                                 vnđ

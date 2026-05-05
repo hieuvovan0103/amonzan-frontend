@@ -1,38 +1,69 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CartHeader from './components/CartHeader';
 import CartList from './components/CartList';
 import CartSummary from './components/CartSummary';
 import { formatPrice } from '@/app/utils/formatPrice';
+import { getItemRentTotal } from '@/lib/cart-pricing';
+import { getCartStockIssues, hasStockIssue, type CartStockIssue } from '@/lib/cart-stock';
 import { useCartStore } from '@/stores/useCartStore';
 
 export default function CartPage() {
     const cartItems = useCartStore((state) => state.items);
     const toggleItem = useCartStore((state) => state.toggleItem);
-    const toggleAll = useCartStore((state) => state.toggleAll);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
+    const [stockIssues, setStockIssues] = useState<CartStockIssue[]>([]);
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        async function loadStockIssues() {
+            const issues = await getCartStockIssues(cartItems);
+
+            if (!isCancelled) {
+                setStockIssues(issues);
+            }
+        }
+
+        loadStockIssues();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [cartItems]);
 
     const { selectedCount, subtotal } = useMemo(() => {
         return cartItems.reduce(
             (acc, item) => {
-                if (item.selected) {
+                if (item.selected && !hasStockIssue(item.id, stockIssues)) {
                     acc.selectedCount += item.quantity;
-                    acc.subtotal += item.price * item.quantity;
+                    acc.subtotal += getItemRentTotal(item);
                 }
 
                 return acc;
             },
             { selectedCount: 0, subtotal: 0 }
         );
-    }, [cartItems]);
+    }, [cartItems, stockIssues]);
 
     const allSelected =
-        cartItems.length > 0 && cartItems.every((item) => item.selected);
+        cartItems.some((item) => !hasStockIssue(item.id, stockIssues)) &&
+        cartItems
+            .filter((item) => !hasStockIssue(item.id, stockIssues))
+            .every((item) => item.selected);
 
     const handleToggleAll = () => {
-        toggleAll(!allSelected);
+        const nextSelected = !allSelected;
+
+        cartItems
+            .filter((item) => !hasStockIssue(item.id, stockIssues))
+            .forEach((item) => {
+                if (item.selected !== nextSelected) {
+                    toggleItem(item.id);
+                }
+            });
     };
 
     return (
@@ -52,6 +83,7 @@ export default function CartPage() {
                                 onToggleItem={toggleItem}
                                 onUpdateQuantity={updateQuantity}
                                 onRemoveItem={removeItem}
+                                stockIssues={stockIssues}
                             />
                         ) : (
                             <div className="py-16 text-center">
@@ -72,7 +104,11 @@ export default function CartPage() {
                         </div>
                     </div>
 
-                    <CartSummary selectedCount={selectedCount} subtotal={subtotal} />
+                    <CartSummary
+                        selectedCount={selectedCount}
+                        subtotal={subtotal}
+                        hasStockIssues={stockIssues.length > 0}
+                    />
                 </div>
             </main>
         </>

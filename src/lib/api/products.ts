@@ -105,6 +105,7 @@ export type ProductReview = {
 
 export type ProductDetail = {
   id: string;
+  shopId: string;
   slug: string;
   title: string;
   rating: number;
@@ -142,6 +143,7 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
 function mapProductCard(product: PublicProductCardApi): ProductListItem {
   return {
     id: product.product_id,
+    shopId: product.shop?.shop_id,
     slug: product.slug,
     title: product.name,
     shopName: product.shop?.shop_name ?? "Amonzan vendor",
@@ -149,6 +151,7 @@ function mapProductCard(product: PublicProductCardApi): ProductListItem {
     reviews: 0,
     price: formatPrice(Number(product.min_daily_rate ?? 0)),
     image: product.primary_image_url ?? fallbackImage,
+    availableStock: Number(product.available_stock ?? 0),
     category: product.category?.name,
     location: [product.shop?.district, product.shop?.province].filter(Boolean).join(", "),
   };
@@ -235,8 +238,11 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
     availableStock: Number(variant.available_stock ?? 0),
     priceValue: Number(variant.base_daily_rate ?? 0),
   }));
-  const minDailyRate = availableVariants.length
-    ? Math.min(...availableVariants.map((variant) => Number(variant.base_daily_rate)))
+  const pricedVariants = availableVariants.length
+    ? availableVariants
+    : product.product_variants ?? [];
+  const minDailyRate = pricedVariants.length
+    ? Math.min(...pricedVariants.map((variant) => Number(variant.base_daily_rate)))
     : 0;
   const reviews = (product.reviews ?? []).map((review) => ({
     id: review.review_id,
@@ -257,6 +263,7 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
 
   return {
     id: product.product_id,
+    shopId: product.shop_profiles?.shop_id ?? product.shop_id,
     slug: product.slug,
     title: product.name,
     rating: Number(product.average_rating ?? product.shop_profiles?.rating_average ?? 0),

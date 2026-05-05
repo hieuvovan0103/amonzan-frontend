@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronRight, Flag } from 'lucide-react';
+import DatePickerField from '@/components/ui/DatePickerField';
 import StarRating from './StarRating';
 import type { ProductDetail, ProductSizeOption } from '@/lib/api/products';
 
@@ -24,6 +25,7 @@ export default function ProductInfo({
     onRentalStartChange,
     onRentalEndChange,
 }: ProductInfoProps) {
+    const currentYear = new Date().getFullYear();
     const displaySizeOptions = product.availableSizes.filter(
         (size) => size.name.trim().toLowerCase() !== 'mặc định',
     );
@@ -93,20 +95,21 @@ export default function ProductInfo({
                     Ngày thuê:
                 </span>
 
-                <div className="flex items-center gap-2 max-w-[280px]">
-                    <input
-                        type="date"
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 max-w-[360px]">
+                    <DatePickerField
                         value={rentalStart}
-                        onChange={(e) => onRentalStartChange(e.target.value)}
-                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
+                        placeholder="Bắt đầu"
+                        minYear={currentYear}
+                        maxYear={currentYear + 2}
+                        onChange={onRentalStartChange}
                     />
-                    <span className="text-[#6B7280]">-</span>
-                    <input
-                        type="date"
+                    <span className="pt-2 text-[#6B7280]">-</span>
+                    <DatePickerField
                         value={rentalEnd}
-                        min={rentalStart || undefined}
-                        onChange={(e) => onRentalEndChange(e.target.value)}
-                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[13px] text-center outline-none focus:border-[#FF9900]"
+                        placeholder="Kết thúc"
+                        minYear={currentYear}
+                        maxYear={currentYear + 2}
+                        onChange={onRentalEndChange}
                     />
                 </div>
             </div>

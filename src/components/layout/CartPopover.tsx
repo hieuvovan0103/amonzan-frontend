@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { formatPrice } from "@/app/utils/formatPrice";
+import { getItemRentTotal, getRentalDays } from "@/lib/cart-pricing";
+import { getCartStockIssues, hasStockIssue, type CartStockIssue } from "@/lib/cart-stock";
 import { useCartStore } from "@/stores/useCartStore";
 
 export default function CartPopover() {
@@ -11,6 +13,25 @@ export default function CartPopover() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
+  const [stockIssues, setStockIssues] = useState<CartStockIssue[]>([]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadStockIssues() {
+      const issues = await getCartStockIssues(items);
+
+      if (!isCancelled) {
+        setStockIssues(issues);
+      }
+    }
+
+    loadStockIssues();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [items]);
 
   const totalItems = useMemo(
     () => items.reduce((total, item) => total + item.quantity, 0),
@@ -18,8 +39,13 @@ export default function CartPopover() {
   );
 
   const subtotal = useMemo(
-    () => items.reduce((total, item) => total + item.price * item.quantity, 0),
-    [items],
+    () =>
+      items.reduce(
+        (total, item) =>
+          hasStockIssue(item.id, stockIssues) ? total : total + getItemRentTotal(item),
+        0,
+      ),
+    [items, stockIssues],
   );
 
   const previewItems = items.slice(-4).reverse();
@@ -95,11 +121,13 @@ export default function CartPopover() {
                         {item.title}
                       </Link>
                       <div className="mt-1 text-[12px] text-[#565959]">
-                        SL: {item.quantity}
+                        SL: {item.quantity} x {getRentalDays(item)} ngày
                         {item.size ? ` • ${item.size}` : ""}
                       </div>
                       <div className="mt-1 text-[13px] font-bold text-[#C62828]">
-                        {formatPrice(item.price * item.quantity)} VNĐ
+                        {hasStockIssue(item.id, stockIssues)
+                          ? "Đã hết hàng"
+                          : `${formatPrice(getItemRentTotal(item))} VNĐ`}
                       </div>
                     </div>
 
@@ -130,14 +158,25 @@ export default function CartPopover() {
                   >
                     Xem giỏ
                   </Link>
-                  <Link
-                    href="/cart"
-                    onClick={() => setIsOpen(false)}
-                    className="rounded-[4px] border border-[#F0C14B] bg-[#FFD814] px-3 py-2 text-center text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#F0C14B]"
-                  >
-                    Thanh toán
-                  </Link>
+                  {stockIssues.length > 0 ? (
+                    <span className="rounded-[4px] border border-[#E6E6E6] bg-[#F7F7F7] px-3 py-2 text-center text-[13px] font-semibold text-[#6B7280]">
+                      Hết hàng
+                    </span>
+                  ) : (
+                    <Link
+                      href="/checkout"
+                      onClick={() => setIsOpen(false)}
+                      className="rounded-[4px] border border-[#F0C14B] bg-[#FFD814] px-3 py-2 text-center text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#F0C14B]"
+                    >
+                      Thanh toán
+                    </Link>
+                  )}
                 </div>
+                {stockIssues.length > 0 && (
+                  <p className="mt-3 text-[12px] leading-5 text-[#842029]">
+                    Có sản phẩm đã hết hàng. Vui lòng mở giỏ hàng để xử lý.
+                  </p>
+                )}
               </div>
             </>
           ) : (

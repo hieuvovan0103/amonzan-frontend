@@ -15,9 +15,9 @@ export default async function ProductDetailPage({
     params,
 }: ProductDetailPageProps) {
     const { slug } = await params;
-    
+
     const product = await getPublicProductDetail(slug);
-    
+
     if (!product) {
         notFound();
     }
@@ -45,7 +45,7 @@ export default async function ProductDetailPage({
 
                 {relatedProducts.length > 0 && (
                     <RelatedProductsSection
-                        title="Khách hàng mua mặt hàng này cũng mua"
+                        title="Khách hàng cũng quan tâm đến các mặt hàng tương tự"
                         products={relatedProducts}
                     />
                 )}

@@ -15,9 +15,9 @@ const tabs: {
     id: VendorVerificationStatus;
     label: string;
 }[] = [
-    { id: "PENDING", label: "Cho duyet" },
-    { id: "VERIFIED", label: "Da duyet" },
-    { id: "REJECTED", label: "Tu choi" },
+    { id: "PENDING", label: "Chờ duyệt" },
+    { id: "VERIFIED", label: "Đã duyệt" },
+    { id: "REJECTED", label: "Từ chối" },
 ];
 
 export default function VendorVerificationTabs({

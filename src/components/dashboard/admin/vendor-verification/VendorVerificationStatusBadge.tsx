@@ -9,17 +9,17 @@ const statusConfig = {
     PENDING: {
         color: "bg-yellow-100 text-yellow-800 border-yellow-200",
         icon: Clock,
-        label: "Cho duyet",
+        label: "Chờ duyệt",
     },
     VERIFIED: {
         color: "bg-green-100 text-green-800 border-green-200",
         icon: CheckCircle2,
-        label: "Da duyet",
+        label: "Đã duyệt",
     },
     REJECTED: {
         color: "bg-red-100 text-red-800 border-red-200",
         icon: XCircle,
-        label: "Tu choi",
+        label: "Từ chối",
     },
 } satisfies Record<
     VendorVerificationStatus,

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarDays, ChevronRight, Home, LogOut, Package, Settings, Store } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronRight, ClipboardCheck, Home, LogOut, Package, Settings, Store } from "lucide-react";
 import Link from "next/link";
 import { VendorTab } from "@/types/vendor";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -12,9 +12,10 @@ type VendorSidebarProps = {
 
 const NAV_ITEMS: { id: VendorTab | null; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "vendor_listings", label: "Sản phẩm", icon: Package },
+    { id: "vendor_orders", label: "Duyệt đơn thuê", icon: ClipboardCheck },
     { id: "rentals_calendar", label: "Lịch cho thuê", icon: CalendarDays },
     { id: null, label: "Thống kê", icon: BarChart3, badge: "Soon" },
-    { id: null, label: "Cài đặt shop", icon: Settings, badge: "Soon" },
+    { id: "shop_settings", label: "Cài đặt shop", icon: Settings },
 ];
 
 export default function VendorSidebar({ activeTab, setActiveTab }: VendorSidebarProps) {

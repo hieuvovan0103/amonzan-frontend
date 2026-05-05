@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatPrice } from "@/app/utils/formatPrice";
 import type { ProductDetail } from "@/lib/api/products";
 
@@ -45,7 +46,12 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
                         <span className="text-[#222222]">{product.categoryName || "Chưa phân loại"}</span>
 
                         <span className="font-medium text-[#565959]">Cửa hàng</span>
-                        <span className="text-[#222222]">{product.storeName}</span>
+                        <Link
+                            href={`/shop/${product.shopId}`}
+                            className="text-[#007185] hover:text-[#E47911] hover:underline"
+                        >
+                            {product.storeName}
+                        </Link>
 
                         <span className="font-medium text-[#565959]">Khu vực</span>
                         <span className="text-[#222222]">{product.location || "Chưa cập nhật"}</span>
@@ -76,12 +82,21 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
                 </div>
             </div>
 
-            {product.shopDescription && (
-                <div className="mt-4 max-w-4xl rounded-[6px] border border-[#E6E6E6] bg-white p-5 text-[14px] leading-[1.6] text-[#222222]">
-                    <h3 className="mb-2 text-[16px] font-bold">Thông tin cửa hàng</h3>
-                    <p>{product.shopDescription}</p>
-                </div>
-            )}
+            <div
+                id="chinh-sach-cua-hang"
+                className="mt-4 max-w-4xl rounded-[6px] border border-[#E6E6E6] bg-white p-5 text-[14px] leading-[1.6] text-[#222222]"
+            >
+                <h3 className="mb-2 text-[16px] font-bold">
+                    Thông tin & chính sách cửa hàng
+                </h3>
+                {product.shopDescription ? (
+                    <p className="whitespace-pre-line">{product.shopDescription}</p>
+                ) : (
+                    <p className="text-[#565959]">
+                        Cửa hàng chưa cập nhật chính sách riêng. Vui lòng liên hệ cửa hàng để xác nhận điều kiện thuê, hoàn trả và bồi thường nếu có.
+                    </p>
+                )}
+            </div>
         </section>
     );
 }
