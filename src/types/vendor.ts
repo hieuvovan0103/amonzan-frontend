@@ -1,4 +1,9 @@
-export type VendorProductStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
+export type VendorProductStatus =
+  | "DRAFT"
+  | "PENDING_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "ARCHIVED";
 
 export type MockVendorProductStatus = "ENABLE" | "IN_USE" | "DISABLE";
 
@@ -47,6 +52,7 @@ export interface ApiProduct {
   slug: string;
   description: string | null;
   status: VendorProductStatus;
+  rejection_reason?: string | null;
   created_at: string;
   updated_at: string;
   categories: ApiCategory | null;
@@ -104,6 +110,46 @@ export type VendorOrder = {
   }>;
 };
 
+export type VendorEarlyReturnRequest = {
+  requestId: string;
+  orderId: string;
+  requestedReturnAt: string;
+  originalRentalEnd: string;
+  reason: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "RECEIVED" | string;
+  vendorResponseNote: string | null;
+  estimatedRefundAmount: number;
+  conditionImageUrls: string[];
+  createdAt: string;
+  order: {
+    orderId: string;
+    status: string;
+    paymentStatus: string;
+    rentalStart: string;
+    rentalEnd: string;
+    subtotal: number;
+    totalAmount: number;
+  };
+  renter: {
+    fullName: string;
+    email: string | null;
+    phoneNumber: string | null;
+    reputationScore: number;
+    penaltyPoints: number;
+  };
+  items: Array<{
+    orderItemId: string;
+    variantId: string;
+    productId: string | null;
+    productSlug: string | null;
+    productName: string;
+    productImage: string | null;
+    variantName: string | null;
+    quantity: number;
+    lineSubtotal: number;
+  }>;
+};
+
 export type VendorCalendarEvent = {
   id: number;
   title: string;
@@ -112,4 +158,10 @@ export type VendorCalendarEvent = {
   color: string;
 };
 
-export type VendorTab = "vendor_listings" | "vendor_detail" | "vendor_orders" | "rentals_calendar" | "shop_settings";
+export type VendorTab =
+  | "vendor_listings"
+  | "vendor_detail"
+  | "vendor_orders"
+  | "vendor_returns"
+  | "rentals_calendar"
+  | "shop_settings";

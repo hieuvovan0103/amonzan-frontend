@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { formatPrice } from "@/app/utils/formatPrice";
-import type { ProductDetail, ProductSizeOption } from "@/lib/api/products";
+import type {
+    ProductAvailability,
+    ProductDetail,
+    ProductSizeOption,
+} from "@/lib/api/products";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useToastStore } from "@/stores/useToastStore";
@@ -14,6 +18,8 @@ type BuyBoxProps = {
     rentalEnd: string;
     location: string;
     storeName: string;
+    availability?: ProductAvailability | null;
+    isCheckingAvailability?: boolean;
 };
 
 function formatRentalDate(value: string) {
@@ -32,6 +38,8 @@ export default function BuyBox({
     rentalEnd,
     location,
     storeName,
+    availability,
+    isCheckingAvailability = false,
 }: BuyBoxProps) {
     const { user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
@@ -42,6 +50,9 @@ export default function BuyBox({
     const selectedSizeName = selectedSize?.name ?? product.sizes[0] ?? "Mặc định";
     const shouldShowSelectedSize = selectedSizeName.trim().toLowerCase() !== "mặc định";
     const hasRentalDates = Boolean(rentalStart && rentalEnd);
+    const hasDateRangeError = Boolean(rentalStart && rentalEnd && rentalEnd <= rentalStart);
+    const isDateUnavailable = Boolean(availability && !availability.available);
+    const isActionDisabled = isCheckingAvailability || hasDateRangeError || isDateUnavailable;
     const rentDates = hasRentalDates
         ? `${formatRentalDate(rentalStart)} - ${formatRentalDate(rentalEnd)}`
         : "Chưa chọn thời gian thuê";
@@ -54,6 +65,24 @@ export default function BuyBox({
 
         if (!hasRentalDates) {
             showToast("Vui lòng chọn ngày thuê trước khi thêm vào giỏ.", "error");
+            return;
+        }
+
+        if (hasDateRangeError) {
+            showToast("Ngày trả phải sau ngày thuê.", "error");
+            return;
+        }
+
+        if (isCheckingAvailability) {
+            showToast("Vui lòng chờ hệ thống kiểm tra lịch thuê.", "info");
+            return;
+        }
+
+        if (isDateUnavailable) {
+            showToast(
+                availability?.message || "Sản phẩm không khả dụng trong thời gian đã chọn.",
+                "error",
+            );
             return;
         }
 
@@ -135,14 +164,16 @@ export default function BuyBox({
                     <>
                         <button
                             onClick={handleAddToCart}
-                            className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                            disabled={isActionDisabled}
+                            className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm disabled:cursor-not-allowed disabled:border-[#E6E6E6] disabled:bg-[#F7F7F7] disabled:text-[#6B7280]"
                         >
-                            Thêm vào giỏ
+                            {isCheckingAvailability ? "Đang kiểm tra lịch..." : "Thêm vào giỏ"}
                         </button>
 
                         <button
                             onClick={handleRentNow}
-                            className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                            disabled={isActionDisabled}
+                            className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm disabled:cursor-not-allowed disabled:bg-[#F7F7F7] disabled:text-[#6B7280]"
                         >
                             Thuê ngay
                         </button>

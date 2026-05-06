@@ -96,7 +96,7 @@ export const steps = [
   {
     icon: Zap,
     title: "Đặt thuê",
-    desc: "Chọn ngày, size, thanh toán cọc và nhận xác nhận.",
+    desc: "Chọn ngày, size, thanh toán và nhận xác nhận.",
   },
   {
     icon: ShoppingBag,
@@ -106,7 +106,7 @@ export const steps = [
   {
     icon: RefreshCw,
     title: "Hoàn trả",
-    desc: "Trả lại đồ sau sự kiện và nhận lại tiền cọc nhanh chóng.",
+    desc: "Trả lại đồ sau sự kiện theo lịch đã đặt.",
   },
 ];
 

@@ -51,7 +51,7 @@ export default function CartSummary({
 
                 {hasStockIssues && (
                     <p className="mt-3 text-[13px] leading-5 text-[#842029]">
-                        Có sản phẩm đã hết hàng hoặc không đủ số lượng. Vui lòng xóa hoặc điều chỉnh trước khi thanh toán.
+                        Có sản phẩm đã hết hàng, không đủ số lượng hoặc không khả dụng trong thời gian đã chọn. Vui lòng xóa hoặc điều chỉnh trước khi thanh toán.
                     </p>
                 )}
             </div>

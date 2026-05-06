@@ -2,29 +2,110 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, ChevronDown, LogOut, Search, Settings, Store, UserCircle } from "lucide-react";
+import { ChevronDown, LogOut, Search, Settings, Store, UserCircle } from "lucide-react";
 import VendorSidebar from "@/components/dashboard/vendor/VendorSidebar";
 import VendorListingsView from "@/components/dashboard/vendor/VendorListingsView";
 import VendorProductDetailView from "@/components/dashboard/vendor/VendorProductDetailView";
 import VendorRentalsCalendarView from "@/components/dashboard/vendor/VendorRentalsCalendarView";
 import VendorShopSettingsView from "@/components/dashboard/vendor/VendorShopSettingsView";
 import VendorOrdersView from "@/components/dashboard/vendor/VendorOrdersView";
+import ReturnRequestList from "@/components/returns/ReturnRequestList";
 import { MOCK_VENDOR_EVENTS } from "@/data/mockVendorDashboard";
 import { ApiProduct, VendorTab } from "@/types/vendor";
 import { getVendorProducts } from "@/lib/api/vendor";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useCallback } from "react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const TAB_LABELS: Record<VendorTab, string> = {
     vendor_listings: "Danh sách sản phẩm",
     vendor_detail: "Chi tiết sản phẩm",
     vendor_orders: "Duyệt đơn thuê",
+    vendor_returns: "Yêu cầu hoàn trả",
     rentals_calendar: "Lịch cho thuê",
     shop_settings: "Cài đặt cửa hàng",
 };
 
+const VENDOR_TAB_STORAGE_KEY = "amonzan-vendor-active-tab";
+const VENDOR_PRODUCT_STORAGE_KEY = "amonzan-vendor-selected-product-id";
+const vendorTabs: VendorTab[] = [
+    "vendor_listings",
+    "vendor_detail",
+    "vendor_orders",
+    "vendor_returns",
+    "rentals_calendar",
+    "shop_settings",
+];
+
+function isVendorTab(value: string | null): value is VendorTab {
+    return Boolean(value && vendorTabs.includes(value as VendorTab));
+}
+
+function getInitialVendorTab(): VendorTab {
+    if (typeof window === "undefined") {
+        return "vendor_listings";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (window.location.pathname.includes("/dashboard/vendor/returns")) {
+        return "vendor_returns";
+    }
+
+    const tabFromUrl = params.get("tab");
+    if (isVendorTab(tabFromUrl)) {
+        return tabFromUrl;
+    }
+
+    const storedTab = window.localStorage.getItem(VENDOR_TAB_STORAGE_KEY);
+    if (isVendorTab(storedTab)) {
+        return storedTab;
+    }
+
+    return "vendor_listings";
+}
+
+function persistVendorState(tab: VendorTab, productId?: string | null) {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(VENDOR_TAB_STORAGE_KEY, tab);
+
+    if (productId) {
+        window.localStorage.setItem(VENDOR_PRODUCT_STORAGE_KEY, productId);
+    } else if (tab !== "vendor_detail") {
+        window.localStorage.removeItem(VENDOR_PRODUCT_STORAGE_KEY);
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+
+    if (tab === "vendor_detail" && productId) {
+        url.searchParams.set("productId", productId);
+    } else {
+        url.searchParams.delete("productId");
+    }
+
+    window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function getRestoredSelectedProduct(products: ApiProduct[]) {
+    if (typeof window === "undefined" || products.length === 0) {
+        return null;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const productId =
+        params.get("productId") ??
+        window.localStorage.getItem(VENDOR_PRODUCT_STORAGE_KEY);
+
+    if (!productId) {
+        return null;
+    }
+
+    return products.find((product) => product.product_id === productId) ?? null;
+}
+
 export default function VendorDashboardShell() {
-    const [activeTab, setActiveTab] = useState<VendorTab>("vendor_listings");
+    const [activeTab, setActiveTabState] = useState<VendorTab>("vendor_listings");
     const [selectedProduct, setSelectedProduct] = useState<ApiProduct | null>(null);
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -32,12 +113,21 @@ export default function VendorDashboardShell() {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const { profile, signOut } = useAuthStore();
 
+    useEffect(() => {
+        setActiveTabState(getInitialVendorTab());
+    }, []);
+
     const fetchProducts = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const data = await getVendorProducts();
             setProducts(data);
+            setSelectedProduct((current) =>
+                current
+                    ? data.find((product) => product.product_id === current.product_id) ?? current
+                    : getRestoredSelectedProduct(data),
+            );
         } catch (err: any) {
             setError(err.message || "Không thể tải danh sách sản phẩm");
         } finally {
@@ -49,14 +139,58 @@ export default function VendorDashboardShell() {
         fetchProducts();
     }, [fetchProducts]);
 
+    useEffect(() => {
+        persistVendorState(activeTab, selectedProduct?.product_id);
+    }, [activeTab, selectedProduct?.product_id]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            const params = new URLSearchParams(window.location.search);
+            const tabFromUrl = params.get("tab");
+            const productId = params.get("productId");
+
+            if (isVendorTab(tabFromUrl)) {
+                setActiveTabState(tabFromUrl);
+            }
+
+            if (productId) {
+                setSelectedProduct(
+                    products.find((product) => product.product_id === productId) ?? null,
+                );
+            }
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, [products]);
+
+    useEffect(() => {
+        if (activeTab !== "vendor_detail") return;
+        if (selectedProduct || products.length === 0) return;
+
+        const restoredProduct = getRestoredSelectedProduct(products);
+        if (restoredProduct) {
+            setSelectedProduct(restoredProduct);
+        } else {
+            setActiveTabState("vendor_listings");
+        }
+    }, [activeTab, products, selectedProduct]);
+
+    const setActiveTab = (tab: VendorTab) => {
+        if (tab !== "vendor_detail") {
+            setSelectedProduct(null);
+        }
+        setActiveTabState(tab);
+    };
+
     const handleSelectProduct = (product: ApiProduct) => {
         setSelectedProduct(product);
-        setActiveTab("vendor_detail");
+        setActiveTabState("vendor_detail");
     };
 
     const handleBackToList = () => {
         setSelectedProduct(null);
-        setActiveTab("vendor_listings");
+        setActiveTabState("vendor_listings");
     };
 
     return (
@@ -104,16 +238,10 @@ export default function VendorDashboardShell() {
                     {/* Right: Actions */}
                     <div className="flex items-center gap-1">
 
-                        {/* Notification bell */}
-                        <button
-                            type="button"
-                            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#565959] transition-all hover:bg-[#F4F6F8] hover:text-[#222222]"
-                            aria-label="Thông báo"
-                        >
-                            <Bell className="h-5 w-5" />
-                            {/* Unread dot */}
-                            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FF9900] ring-2 ring-white" />
-                        </button>
+                        <NotificationBell
+                            buttonClassName="flex h-9 w-9 items-center justify-center rounded-xl text-[#565959] hover:bg-[#F4F6F8] hover:text-[#222222]"
+                            iconClassName="h-5 w-5"
+                        />
 
                         {/* Settings */}
                         <button
@@ -215,6 +343,10 @@ export default function VendorDashboardShell() {
 
                         {activeTab === "vendor_orders" && (
                             <VendorOrdersView />
+                        )}
+
+                        {activeTab === "vendor_returns" && (
+                            <ReturnRequestList />
                         )}
 
                         {activeTab === "shop_settings" && (

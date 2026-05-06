@@ -3,6 +3,8 @@
 import { ChevronDown, Filter } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { getPublicCategories } from "@/lib/api/categories";
+import type { ProductCategory } from "@/lib/api/categories";
 
 export default function ProductFiltersSidebar() {
     const router = useRouter();
@@ -12,6 +14,7 @@ export default function ProductFiltersSidebar() {
     const [province, setProvince] = useState(searchParams.get("province") || "");
     const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
     const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
 
     useEffect(() => {
         setCategory(searchParams.get("category") || "");
@@ -19,6 +22,26 @@ export default function ProductFiltersSidebar() {
         setMinPrice(searchParams.get("minPrice") || "");
         setMaxPrice(searchParams.get("maxPrice") || "");
     }, [searchParams]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        getPublicCategories()
+            .then((data) => {
+                if (isMounted) {
+                    setCategories(data);
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setCategories([]);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleApply = () => {
         const params = new URLSearchParams(searchParams.toString());
@@ -65,10 +88,11 @@ export default function ProductFiltersSidebar() {
                                 className="w-full appearance-none border border-[#D5D9D9] rounded-sm px-3 py-2.5 text-[14px] outline-none focus:border-[#FF9900] bg-white"
                             >
                                 <option value="">Tất cả danh mục</option>
-                                <option value="cosplay">Cosplay</option>
-                                <option value="su-kien">Trang phục sự kiện</option>
-                                <option value="thiet-bi">Thiết bị điện tử</option>
-                                <option value="da-ngoai">Dã ngoại</option>
+                                {categories.map((item) => (
+                                    <option key={item.category_id} value={item.slug}>
+                                        {item.name}
+                                    </option>
+                                ))}
                             </select>
                             <ChevronDown className="w-4 h-4 text-[#6B7280] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>

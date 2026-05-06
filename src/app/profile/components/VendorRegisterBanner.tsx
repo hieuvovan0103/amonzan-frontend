@@ -38,7 +38,7 @@ export default function VendorRegisterBanner() {
 
                         <li className="flex items-center gap-2 text-[13px] text-[#222222] font-medium">
                             <ShieldCheck className="w-4 h-4 text-[#007600]" />
-                            Được bảo vệ bởi chính sách cọc an toàn
+                            Được bảo vệ bởi quy trình thuê minh bạch
                         </li>
                     </ul>
                 </div>

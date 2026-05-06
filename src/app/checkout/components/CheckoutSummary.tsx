@@ -3,7 +3,6 @@ import { formatPrice, getPaymentMethodLabel } from "./checkout-data";
 
 type CheckoutSummaryProps = {
     totalRentFee: number;
-    totalDeposit: number;
     shippingFee: number;
     discount: number;
     finalTotal: number;
@@ -15,7 +14,6 @@ type CheckoutSummaryProps = {
 
 export default function CheckoutSummary({
     totalRentFee,
-    totalDeposit,
     shippingFee,
     discount,
     finalTotal,
@@ -43,8 +41,8 @@ export default function CheckoutSummary({
 
             <p className="mb-4 flex items-start gap-2 text-[12px] leading-5 text-[#565959]">
                 <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#007600]" />
-                Giao dịch được bảo vệ. Amonzan sẽ ghi nhận đơn thuê, tiền cọc và trạng
-                thái thanh toán.
+                Giao dịch được bảo vệ. Amonzan sẽ ghi nhận đơn thuê và trạng thái
+                thanh toán.
             </p>
 
             <div className="border-t border-[#E6E6E6] pt-4">
@@ -56,11 +54,6 @@ export default function CheckoutSummary({
                     <SummaryRow
                         label="Tổng tiền thuê"
                         value={`${formatPrice(totalRentFee)}đ`}
-                    />
-
-                    <SummaryRow
-                        label="Tổng tiền cọc"
-                        value={`${formatPrice(totalDeposit)}đ`}
                     />
 
                     <SummaryRow

@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { ProductDetail, ProductSizeOption } from "@/lib/api/products";
+import { useEffect, useMemo, useState } from "react";
+import {
+    getPublicProductAvailability,
+    type ProductAvailability,
+    type ProductDetail,
+    type ProductSizeOption,
+} from "@/lib/api/products";
 import BuyBox from "./BuyBox";
 import ProductGallery from "./ProductGallery";
 import ProductInfo from "./ProductInfo";
@@ -22,13 +27,53 @@ export default function ProductDetailPurchase({ product }: ProductDetailPurchase
     const [selectedSize, setSelectedSize] = useState<ProductSizeOption | undefined>(initialSize);
     const [rentalStart, setRentalStart] = useState("");
     const [rentalEnd, setRentalEnd] = useState("");
+    const [availability, setAvailability] = useState<ProductAvailability | null>(null);
+    const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
     const handleRentalStartChange = (value: string) => {
         setRentalStart(value);
-        if (rentalEnd && value && rentalEnd < value) {
-            setRentalEnd(value);
+        if (rentalEnd && value && rentalEnd <= value) {
+            const nextDay = new Date(`${value}T00:00:00.000Z`);
+            nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+            setRentalEnd(nextDay.toISOString().slice(0, 10));
         }
     };
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        async function checkAvailability() {
+            if (!selectedSize?.variantId || !rentalStart || !rentalEnd || rentalEnd <= rentalStart) {
+                setAvailability(null);
+                return;
+            }
+
+            setIsCheckingAvailability(true);
+
+            try {
+                const result = await getPublicProductAvailability({
+                    slug: product.slug,
+                    variantId: selectedSize.variantId,
+                    start: rentalStart,
+                    end: rentalEnd,
+                });
+
+                if (!isCancelled) {
+                    setAvailability(result);
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsCheckingAvailability(false);
+                }
+            }
+        }
+
+        checkAvailability();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [product.slug, rentalEnd, rentalStart, selectedSize?.variantId]);
 
     return (
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mb-12">
@@ -45,6 +90,8 @@ export default function ProductDetailPurchase({ product }: ProductDetailPurchase
                     rentalEnd={rentalEnd}
                     onRentalStartChange={handleRentalStartChange}
                     onRentalEndChange={setRentalEnd}
+                    availability={availability}
+                    isCheckingAvailability={isCheckingAvailability}
                 />
             </div>
 
@@ -56,6 +103,8 @@ export default function ProductDetailPurchase({ product }: ProductDetailPurchase
                     rentalEnd={rentalEnd}
                     location={product.location}
                     storeName={product.storeName}
+                    availability={availability}
+                    isCheckingAvailability={isCheckingAvailability}
                 />
             </div>
         </div>

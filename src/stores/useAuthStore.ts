@@ -1,14 +1,16 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { resetBrokenSupabaseSession, supabase } from '@/lib/supabase';
 
 interface AuthState {
   session: Session | null;
   user: User | null;
   profile: any | null;
   isInitialized: boolean;
+  isSyncing: boolean;
   setAuth: (session: Session | null, user: User | null) => void;
   setProfile: (profile: any | null) => void;
+  setSyncing: (isSyncing: boolean) => void;
   signOut: () => Promise<void>;
 }
 
@@ -17,11 +19,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
   isInitialized: false,
-  setAuth: (session, user) => set({ session, user, isInitialized: true }),
+  isSyncing: true,
+  setAuth: (session, user) => set({ session, user, isInitialized: true, isSyncing: false }),
   setProfile: (profile) => set({ profile }),
+  setSyncing: (isSyncing) => set({ isSyncing }),
   signOut: async () => {
-    await supabase.auth.signOut();
-    set({ session: null, user: null, profile: null });
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      await resetBrokenSupabaseSession();
+    }
+    set({ session: null, user: null, profile: null, isInitialized: true, isSyncing: false });
 
     // Import dynamically để tránh circular dependency
     const { useToastStore } = await import('@/stores/useToastStore');
@@ -31,4 +39,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     window.location.href = '/products';
   },
 }));
-

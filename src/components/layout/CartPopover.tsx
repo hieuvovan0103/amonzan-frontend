@@ -19,7 +19,10 @@ export default function CartPopover() {
     let isCancelled = false;
 
     async function loadStockIssues() {
-      const issues = await getCartStockIssues(items);
+      const issues = await getCartStockIssues(items, {
+        failOpen: true,
+        silent: true,
+      });
 
       if (!isCancelled) {
         setStockIssues(issues);

@@ -1,6 +1,5 @@
 import { CreditCard, ShieldCheck, Wallet } from "lucide-react";
 export {
-    getItemDepositTotal,
     getItemRentTotal,
     getRentalDays,
 } from "@/lib/cart-pricing";

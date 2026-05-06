@@ -56,7 +56,7 @@ export default function BanUserModal({
                             </span>
                         </div>
                         <div className="flex justify-between text-[13px]">
-                            <span className="text-[#565959]">Tiền cọc đang giữ:</span>
+                            <span className="text-[#565959]">Số dư đang xử lý:</span>
                             <span className="font-bold text-[#C62828]">
                                 {user.escrowBalance.toLocaleString()} ₫
                             </span>

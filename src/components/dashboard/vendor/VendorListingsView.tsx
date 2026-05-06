@@ -1,8 +1,8 @@
 import { ChevronDown, Plus, Search, Loader2, PackageOpen, AlertCircle } from "lucide-react";
-import { useState } from "react";
 import VendorProductCard from "@/components/dashboard/vendor/VendorProductCard";
 import AddProductModal from "@/components/dashboard/vendor/AddProductModal";
 import { ApiProduct } from "@/types/vendor";
+import { useVendorProductFormStore } from "@/stores/vendorProductFormStore";
 
 type VendorListingsViewProps = {
     products: ApiProduct[];
@@ -19,7 +19,9 @@ export default function VendorListingsView({
     onSelectProduct,
     onRefresh,
 }: VendorListingsViewProps) {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const isAddModalOpen = useVendorProductFormStore((state) => state.isModalOpen);
+    const openProductForm = useVendorProductFormStore((state) => state.openModal);
+    const closeProductForm = useVendorProductFormStore((state) => state.closeModal);
 
     return (
         <div className="flex-1 animate-in fade-in duration-300">
@@ -47,7 +49,7 @@ export default function VendorListingsView({
 
                 <button
                     type="button"
-                    onClick={() => setIsAddModalOpen(true)}
+                    onClick={openProductForm}
                     className="w-full sm:w-auto bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[14px] px-6 py-2 rounded-[8px] transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                     <Plus className="w-4 h-4" />
@@ -100,7 +102,7 @@ export default function VendorListingsView({
 
             <AddProductModal 
                 isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
+                onClose={closeProductForm} 
                 onSuccess={onRefresh} 
             />
         </div>

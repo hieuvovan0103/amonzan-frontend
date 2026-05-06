@@ -36,7 +36,7 @@ function hasApprovedVendorProfile(profile: any) {
 }
 
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
-  const { isInitialized, profile, session } = useAuthStore();
+  const { isInitialized, isSyncing, profile, session } = useAuthStore();
   const router = useRouter();
 
   const isVendorOnlyRoute =
@@ -49,7 +49,7 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     matchesRole && (!isVendorOnlyRoute || hasApprovedVendorProfile(profile));
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized || isSyncing) {
       return;
     }
 
@@ -61,9 +61,17 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     if (profile && !accessAllowed) {
       router.push("/");
     }
-  }, [accessAllowed, isInitialized, profile, router, session]);
+  }, [accessAllowed, isInitialized, isSyncing, profile, router, session]);
 
-  if (!isInitialized || !session || !profile) {
+  if (!isInitialized) {
+    return null;
+  }
+
+  if ((!session || !profile) && isSyncing) {
+    return null;
+  }
+
+  if (!session || !profile) {
     return null;
   }
 

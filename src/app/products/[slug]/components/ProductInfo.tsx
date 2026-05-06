@@ -1,10 +1,15 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { ChevronRight, Flag } from 'lucide-react';
-import DatePickerField from '@/components/ui/DatePickerField';
-import StarRating from './StarRating';
-import type { ProductDetail, ProductSizeOption } from '@/lib/api/products';
+import Link from "next/link";
+import { ChevronRight, Flag } from "lucide-react";
+import { formatPrice } from "@/app/utils/formatPrice";
+import DatePickerField from "@/components/ui/DatePickerField";
+import StarRating from "./StarRating";
+import type {
+    ProductAvailability,
+    ProductDetail,
+    ProductSizeOption,
+} from "@/lib/api/products";
 
 type ProductInfoProps = {
     product: ProductDetail;
@@ -14,7 +19,19 @@ type ProductInfoProps = {
     rentalEnd: string;
     onRentalStartChange: (value: string) => void;
     onRentalEndChange: (value: string) => void;
+    availability?: ProductAvailability | null;
+    isCheckingAvailability?: boolean;
 };
+
+function calculateRentalDays(start: string, end: string) {
+    if (!start || !end || end <= start) return 0;
+
+    return Math.ceil(
+        (new Date(`${end}T00:00:00.000Z`).getTime() -
+            new Date(`${start}T00:00:00.000Z`).getTime()) /
+            86_400_000,
+    );
+}
 
 export default function ProductInfo({
     product,
@@ -24,19 +41,32 @@ export default function ProductInfo({
     rentalEnd,
     onRentalStartChange,
     onRentalEndChange,
+    availability,
+    isCheckingAvailability = false,
 }: ProductInfoProps) {
     const currentYear = new Date().getFullYear();
+    const today = new Date().toISOString().slice(0, 10);
+    const minRentalEnd = rentalStart
+        ? new Date(new Date(`${rentalStart}T00:00:00.000Z`).getTime() + 86_400_000)
+            .toISOString()
+            .slice(0, 10)
+        : today;
     const displaySizeOptions = product.availableSizes.filter(
-        (size) => size.name.trim().toLowerCase() !== 'mặc định',
+        (size) => size.name.trim().toLowerCase() !== "mặc định",
     );
+    const selectedPriceValue = selectedSize?.priceValue ?? product.priceValue;
+    const rentalDays = calculateRentalDays(rentalStart, rentalEnd);
+    const displayedPrice = rentalDays > 0
+        ? formatPrice(selectedPriceValue * rentalDays)
+        : formatPrice(selectedPriceValue);
 
     return (
         <>
-            <h1 className="text-[20px] md:text-[24px] font-bold text-[#222222] leading-[1.3] mb-2">
+            <h1 className="mb-2 text-[20px] font-bold leading-[1.3] text-[#222222] md:text-[24px]">
                 {product.title}
             </h1>
 
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[#E6E6E6]">
+            <div className="mb-3 flex items-center gap-2 border-b border-[#E6E6E6] pb-3">
                 <span className="text-[14px] font-bold text-[#222222]">
                     {product.rating}
                 </span>
@@ -45,22 +75,34 @@ export default function ProductInfo({
 
                 <Link
                     href="#danh-gia"
-                    className="text-[14px] text-[#007185] hover:text-[#E47911] hover:underline ml-1"
+                    className="ml-1 text-[14px] text-[#007185] hover:text-[#E47911] hover:underline"
                 >
                     {product.reviewsCount} đánh giá
                 </Link>
             </div>
 
-            <div className="flex items-baseline gap-1 mb-4">
-                <span className="text-[24px] font-bold text-[#C62828] leading-none">
-                    {product.price}
-                </span>
-                <span className="text-[14px] font-bold text-[#C62828]">vnđ</span>
+            <div className="mb-4">
+                <div className="flex items-baseline gap-1">
+                    <span className="text-[24px] font-bold leading-none text-[#C62828]">
+                        {displayedPrice}
+                    </span>
+                    <span className="text-[14px] font-bold text-[#C62828]">vnđ</span>
+                </div>
+
+                {rentalDays > 0 ? (
+                    <p className="mt-1 text-[13px] text-[#565959]">
+                        Tổng tiền thuê {rentalDays} ngày · {formatPrice(selectedPriceValue)} vnđ/ngày
+                    </p>
+                ) : (
+                    <p className="mt-1 text-[13px] text-[#565959]">
+                        Giá thuê theo ngày
+                    </p>
+                )}
             </div>
 
             {displaySizeOptions.length > 0 && (
                 <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="mb-2 flex items-center gap-2">
                         <span className="text-[14px] font-bold text-[#222222]">
                             Kích thước:
                         </span>
@@ -75,10 +117,11 @@ export default function ProductInfo({
                                 key={size.variantId}
                                 type="button"
                                 onClick={() => onSelectSize(size)}
-                                className={`px-3 py-1.5 text-[13px] font-medium rounded-[4px] border transition-all ${selectedSize?.variantId === size.variantId
-                                        ? 'border-[#FF9900] bg-[#FF9900]/10 text-[#222222] shadow-sm'
-                                        : 'border-[#D5D9D9] bg-white text-[#222222] hover:bg-[#F7F7F7]'
-                                    }`}
+                                className={`rounded-[4px] border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                    selectedSize?.variantId === size.variantId
+                                        ? "border-[#FF9900] bg-[#FF9900]/10 text-[#222222] shadow-sm"
+                                        : "border-[#D5D9D9] bg-white text-[#222222] hover:bg-[#F7F7F7]"
+                                }`}
                             >
                                 {size.name}
                                 <span className="ml-1 text-[11px] text-[#565959]">
@@ -91,16 +134,17 @@ export default function ProductInfo({
             )}
 
             <div className="mb-6">
-                <span className="text-[14px] font-bold text-[#222222] block mb-2">
+                <span className="mb-2 block text-[14px] font-bold text-[#222222]">
                     Ngày thuê:
                 </span>
 
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 max-w-[360px]">
+                <div className="grid max-w-[360px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
                     <DatePickerField
                         value={rentalStart}
                         placeholder="Bắt đầu"
                         minYear={currentYear}
                         maxYear={currentYear + 2}
+                        minDate={today}
                         onChange={onRentalStartChange}
                     />
                     <span className="pt-2 text-[#6B7280]">-</span>
@@ -109,17 +153,36 @@ export default function ProductInfo({
                         placeholder="Kết thúc"
                         minYear={currentYear}
                         maxYear={currentYear + 2}
+                        minDate={minRentalEnd}
                         onChange={onRentalEndChange}
                     />
                 </div>
+
+                {isCheckingAvailability && (
+                    <p className="mt-2 text-[13px] font-medium text-[#565959]">
+                        Đang kiểm tra lịch thuê...
+                    </p>
+                )}
+
+                {!isCheckingAvailability && availability && (
+                    <p
+                        className={`mt-2 text-[13px] font-semibold ${
+                            availability.available ? "text-[#007600]" : "text-[#842029]"
+                        }`}
+                    >
+                        {availability.available
+                            ? `Còn ${availability.availableStock} sản phẩm trong thời gian đã chọn.`
+                            : availability.message || "Sản phẩm không khả dụng trong thời gian đã chọn."}
+                    </p>
+                )}
             </div>
 
             <div className="mb-4">
-                <h3 className="text-[16px] font-bold text-[#222222] mb-3">
+                <h3 className="mb-3 text-[16px] font-bold text-[#222222]">
                     Về sản phẩm này
                 </h3>
 
-                <ul className="list-disc pl-5 space-y-2 text-[14px] text-[#222222] leading-[1.5]">
+                <ul className="list-disc space-y-2 pl-5 text-[14px] leading-[1.5] text-[#222222]">
                     {product.description.map((item, idx) => (
                         <li key={idx}>{item}</li>
                     ))}
@@ -128,14 +191,17 @@ export default function ProductInfo({
 
             <Link
                 href="#thong-tin-san-pham"
-                className="flex items-center text-[14px] text-[#007185] hover:text-[#E47911] hover:underline mb-2 font-medium"
+                className="mb-2 flex items-center text-[14px] font-medium text-[#007185] hover:text-[#E47911] hover:underline"
             >
-                <ChevronRight className="w-4 h-4 mr-0.5" />
+                <ChevronRight className="mr-0.5 h-4 w-4" />
                 Xem thêm chi tiết sản phẩm
             </Link>
 
-            <button className="flex items-center text-[13px] text-[#007185] hover:text-[#E47911] hover:underline mt-4 text-left">
-                <Flag className="w-3.5 h-3.5 mr-1.5" />
+            <button
+                type="button"
+                className="mt-4 flex items-center text-left text-[13px] text-[#007185] hover:text-[#E47911] hover:underline"
+            >
+                <Flag className="mr-1.5 h-3.5 w-3.5" />
                 Báo cáo sự cố với sản phẩm này
             </button>
         </>

@@ -42,12 +42,6 @@ export default function OrderDetailDrawer({
                             </span>
                             <AdminBadge status={order.status} />
                         </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-[13px] text-[#565959] font-medium">
-                                Trạng thái cọc:
-                            </span>
-                            <AdminBadge status={order.escrow} />
-                        </div>
                     </div>
 
                     <div>
@@ -60,7 +54,7 @@ export default function OrderDetailDrawer({
                             <div className="relative">
                                 <div className="absolute -left-[23px] w-4 h-4 rounded-full bg-green-500 border-2 border-white"></div>
                                 <div className="font-bold text-[#222222]">
-                                    Người thuê đặt cọc thành công
+                                    Người thuê thanh toán thành công
                                 </div>
                                 <div className="text-[#6B7280]">18/04/2026 - 09:30</div>
                             </div>
@@ -112,12 +106,6 @@ export default function OrderDetailDrawer({
                                     {order.total.toLocaleString()} ₫
                                 </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-[#565959]">Tiền cọc đang giữ:</span>
-                                <span className="font-bold text-[#C62828]">
-                                    {order.deposit.toLocaleString()} ₫
-                                </span>
-                            </div>
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-[#E6E6E6] flex flex-col gap-2">
@@ -126,12 +114,6 @@ export default function OrderDetailDrawer({
                                 className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[13px] py-2 rounded-[8px] transition-colors shadow-sm"
                             >
                                 Giải ngân cho shop
-                            </button>
-                            <button
-                                type="button"
-                                className="w-full bg-white hover:bg-red-50 border border-red-200 text-red-600 font-bold text-[13px] py-2 rounded-[8px] transition-colors shadow-sm"
-                            >
-                                Hoàn cọc / báo cáo sự cố
                             </button>
                         </div>
                     </div>

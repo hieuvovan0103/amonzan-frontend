@@ -11,7 +11,7 @@ const NEW_ACCOUNT_WINDOW_MS = 24 * 60 * 60 * 1000;
 export default function PhoneVerificationGate() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isInitialized, user, profile } = useAuthStore();
+  const { isInitialized, isSyncing, user, profile } = useAuthStore();
   const [isDismissed, setIsDismissed] = useState(false);
 
   const userRoles =
@@ -30,6 +30,7 @@ export default function PhoneVerificationGate() {
 
   const needsPhoneVerification =
     isInitialized &&
+    !isSyncing &&
     !!user &&
     !!profile &&
     hasPhoneNumber &&

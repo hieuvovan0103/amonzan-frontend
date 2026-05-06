@@ -12,7 +12,7 @@ import CheckoutPaymentSection from "./CheckoutPaymentSection";
 import CheckoutItemsSection from "./CheckoutItemsSection";
 import CheckoutVoucherBox from "./CheckoutVoucherBox";
 import CheckoutSummary from "./CheckoutSummary";
-import { getItemDepositTotal, getItemRentTotal, shippingFee } from "./checkout-data";
+import { getItemRentTotal, shippingFee } from "./checkout-data";
 
 const PENDING_PAYMENT_KEY = "amonzan-pending-payment";
 const BF_CACHE_RELOAD_KEY = "amonzan-checkout-bfcache-reloaded";
@@ -109,6 +109,7 @@ export default function CheckoutPage() {
 
     const items = useCartStore((state) => state.items);
     const hasHydratedCart = useCartStore((state) => state.hasHydrated);
+    const updateQuantity = useCartStore((state) => state.updateQuantity);
     const effectiveItems = items.length > 0 ? items : storageCartItems ?? [];
 
     const selectedItems = useMemo(() => {
@@ -125,11 +126,7 @@ export default function CheckoutPage() {
         return selectedItems.reduce((sum, item) => sum + getItemRentTotal(item), 0);
     }, [selectedItems]);
 
-    const totalDeposit = useMemo(() => {
-        return selectedItems.reduce((sum, item) => sum + getItemDepositTotal(item), 0);
-    }, [selectedItems]);
-
-    const finalTotal = Math.max(0, totalRentFee + totalDeposit + shippingFee - discount);
+    const finalTotal = Math.max(0, totalRentFee + shippingFee - discount);
     const unavailableMessage = selectedStockIssues.length
         ? selectedStockIssues.map((issue) => issue.message).join(" ")
         : "";
@@ -257,6 +254,18 @@ export default function CheckoutPage() {
 
         setDiscount(0);
         setVoucherMessage("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
+    };
+
+    const handleUpdateQuantity = (id: string, quantity: number) => {
+        const nextQuantity = Math.max(1, quantity);
+        updateQuantity(id, nextQuantity);
+        setStorageCartItems((currentItems) =>
+            currentItems
+                ? currentItems.map((item) =>
+                    item.id === id ? { ...item, quantity: nextQuantity } : item,
+                )
+                : currentItems,
+        );
     };
 
     const handlePlaceOrder = async () => {
@@ -460,8 +469,8 @@ export default function CheckoutPage() {
                     />
                     <CheckoutItemsSection
                         items={selectedItems}
-                        totalDeposit={totalDeposit}
                         stockIssues={selectedStockIssues}
+                        onUpdateQuantity={handleUpdateQuantity}
                     />
                 </div>
                 <aside className="w-full flex-shrink-0 md:sticky md:top-24 md:w-[320px]">
@@ -474,7 +483,6 @@ export default function CheckoutPage() {
                     />
                     <CheckoutSummary
                         totalRentFee={totalRentFee}
-                        totalDeposit={totalDeposit}
                         shippingFee={shippingFee}
                         discount={discount}
                         finalTotal={finalTotal}

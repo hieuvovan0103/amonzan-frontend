@@ -1,11 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { getPublicCategories } from "@/lib/api/categories";
+import type { ProductCategory } from "@/lib/api/categories";
 import { createVendorProduct } from "@/lib/api/vendor";
 import { uploadProductImage } from "@/lib/api/productImages";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { useVendorProductFormStore } from "@/stores/vendorProductFormStore";
+import type { VendorProductVariantForm } from "@/stores/vendorProductFormStore";
 
 type AddProductModalProps = {
     isOpen: boolean;
@@ -13,38 +17,61 @@ type AddProductModalProps = {
     onSuccess: () => void;
 };
 
-type VariantForm = {
-    size: string;
-    sku: string;
-    basePrice: string;
-    deposit: string;
-    stock: string;
-    condition: "NEW" | "GOOD" | "FAIR" | "DAMAGED";
-};
-
-const createEmptyVariant = (index: number): VariantForm => ({
-    size: index === 0 ? "Mặc định" : "",
-    sku: "",
-    basePrice: "",
-    deposit: "",
-    stock: "1",
-    condition: "NEW",
-});
-
 export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalProps) {
     const { user } = useAuthStore();
     const { show: showToast } = useToastStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const {
+        formData,
+        images,
+        setField,
+        updateVariant,
+        addVariant,
+        removeVariant,
+        addImageFile,
+        markImageUploading,
+        markImageUploaded,
+        markImageError,
+        removeImage,
+        resetForm,
+    } = useVendorProductFormStore();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("");
-    const [status, setStatus] = useState<"DRAFT" | "ACTIVE">("DRAFT");
-    const [images, setImages] = useState<{ url: string; file?: File; isPrimary: boolean }[]>([]);
-    const [variants, setVariants] = useState<VariantForm[]>([createEmptyVariant(0)]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [categoryError, setCategoryError] = useState("");
+    const { name, description, categoryId, variants } = formData;
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        let isMounted = true;
+        setIsLoadingCategories(true);
+        setCategoryError("");
+
+        getPublicCategories()
+            .then((data) => {
+                if (isMounted) {
+                    setCategories(data);
+                }
+            })
+            .catch((error) => {
+                if (isMounted) {
+                    setCategoryError(error.message || "Không thể tải danh mục.");
+                }
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setIsLoadingCategories(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -60,45 +87,31 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
             .replace(/^-+|-+$/g, "");
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            const tempUrl = URL.createObjectURL(file);
-            setImages((prev) => [
-                ...prev,
-                { url: tempUrl, file, isPrimary: prev.length === 0 },
-            ]);
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file) return;
+
+        if (!user) {
+            showToast("Bạn cần đăng nhập để tải ảnh sản phẩm.", "error");
+            return;
         }
-    };
 
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, imageIndex) => imageIndex !== index));
-    };
-
-    const updateVariant = <K extends keyof VariantForm>(
-        index: number,
-        field: K,
-        value: VariantForm[K],
-    ) => {
-        setVariants((prev) =>
-            prev.map((variant, variantIndex) =>
-                variantIndex === index ? { ...variant, [field]: value } : variant,
-            ),
-        );
-    };
-
-    const addVariant = () => {
-        setVariants((prev) => [...prev, createEmptyVariant(prev.length)]);
-    };
-
-    const removeVariant = (index: number) => {
-        setVariants((prev) => prev.filter((_, variantIndex) => variantIndex !== index));
+        addImageFile(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const latestState = useVendorProductFormStore.getState();
+        const latestFormData = latestState.formData;
+        const latestImages = latestState.images;
+        const latestName = latestFormData.name;
+        const latestDescription = latestFormData.description;
+        const latestCategoryId = latestFormData.categoryId;
+        const latestVariants = latestFormData.variants;
 
-        const hasInvalidVariant = variants.some(
+        const hasInvalidVariant = latestVariants.some(
             (variant) =>
                 !variant.size.trim() ||
                 !variant.sku.trim() ||
@@ -107,13 +120,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 Number(variant.stock) < 1,
         );
 
-        if (!name.trim() || variants.length === 0 || hasInvalidVariant) {
-            showToast("Vui lòng điền đầy đủ thông tin sản phẩm và size.", "error");
+        if (!latestName.trim() || !latestCategoryId || latestVariants.length === 0 || hasInvalidVariant) {
+            showToast("Vui lòng điền đầy đủ thông tin sản phẩm, danh mục và size.", "error");
             return;
         }
 
-        const uniqueSkus = new Set(variants.map((variant) => variant.sku.trim()));
-        if (uniqueSkus.size !== variants.length) {
+        const uniqueSkus = new Set(latestVariants.map((variant) => variant.sku.trim()));
+        if (uniqueSkus.size !== latestVariants.length) {
             showToast("Mỗi size cần có mã SKU riêng.", "error");
             return;
         }
@@ -123,35 +136,59 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
             return;
         }
 
+        if (latestImages.length === 0) {
+            showToast("Vui lòng tải lên ít nhất một ảnh sản phẩm.", "error");
+            return;
+        }
+
+        if (latestImages.some((image) => image.error)) {
+            showToast("Có ảnh tải lên thất bại. Vui lòng xóa ảnh lỗi hoặc tải lại.", "error");
+            return;
+        }
+
         setIsSubmitting(true);
+        setIsUploading(true);
         try {
-            setIsUploading(true);
             const uploadedImages = [];
-            for (let i = 0; i < images.length; i++) {
-                const img = images[i];
-                if (img.file) {
-                    const url = await uploadProductImage(user.id, img.file);
-                    uploadedImages.push({
-                        image_url: url,
-                        sort_order: i,
-                        is_primary: img.isPrimary,
-                    });
+
+            for (let index = 0; index < latestImages.length; index += 1) {
+                const image = latestImages[index];
+                let imageUrl = image.uploadedUrl;
+
+                if (!imageUrl) {
+                    const file = latestState.imageFiles[index];
+                    if (!file) {
+                        throw new Error("Không tìm thấy file ảnh. Vui lòng xóa ảnh này và chọn lại.");
+                    }
+
+                    markImageUploading(image.id);
+                    try {
+                        imageUrl = await uploadProductImage(user.id, file);
+                        markImageUploaded(image.id, imageUrl);
+                    } catch (error: any) {
+                        markImageError(image.id, error.message || "Tải ảnh thất bại.");
+                        throw error;
+                    }
                 }
+
+                uploadedImages.push({
+                    image_url: imageUrl,
+                    sort_order: index,
+                    is_primary: image.isPrimary,
+                });
             }
-            setIsUploading(false);
 
             const payload = {
-                name,
-                slug: `${generateSlug(name)}-${Math.random().toString(36).substring(2, 6)}`,
-                description: description || undefined,
-                category_id: category || undefined,
-                status,
+                name: latestName,
+                slug: `${generateSlug(latestName)}-${Math.random().toString(36).substring(2, 6)}`,
+                description: latestDescription || undefined,
+                category_id: latestCategoryId,
                 images: uploadedImages,
-                variants: variants.map((variant) => ({
+                variants: latestVariants.map((variant) => ({
                     sku: variant.sku.trim(),
                     variant_name: variant.size.trim(),
                     base_daily_rate: Number(variant.basePrice),
-                    deposit_requirement: Number(variant.deposit) || 0,
+                    deposit_requirement: 0,
                     condition: variant.condition,
                     total_stock: Number(variant.stock),
                 })),
@@ -160,14 +197,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
             await createVendorProduct(payload);
 
             showToast("Tạo sản phẩm thành công", "success");
+            resetForm();
             onSuccess();
             onClose();
         } catch (error: any) {
-            setIsUploading(false);
             showToast(error.message || "Tạo sản phẩm thất bại", "error");
         } finally {
+            setIsUploading(false);
             setIsSubmitting(false);
         }
+    };
+
+    const handleClose = () => {
+        resetForm();
+        onClose();
     };
 
     return (
@@ -177,7 +220,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                     <h2 className="text-[18px] font-bold text-[#222222]">Thêm sản phẩm mới</h2>
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="p-2 text-[#565959] hover:bg-[#F7F7F7] rounded-[4px] transition-colors"
                     >
                         <X className="w-5 h-5" />
@@ -200,7 +243,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                                         type="text"
                                         required
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        onChange={(e) => setField("name", e.target.value)}
                                         className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900]"
                                         placeholder="Ví dụ: Váy dạ hội satin"
                                     />
@@ -208,16 +251,27 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
 
                                 <div>
                                     <label className="block text-[13px] font-bold text-[#222222] mb-1">
-                                        Trạng thái
+                                        Danh mục <span className="text-red-500">*</span>
                                     </label>
                                     <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value as "DRAFT" | "ACTIVE")}
-                                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900]"
+                                        required
+                                        value={categoryId}
+                                        onChange={(e) => setField("categoryId", e.target.value)}
+                                        disabled={isLoadingCategories}
+                                        className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] disabled:bg-[#F7F7F7]"
                                     >
-                                        <option value="DRAFT">Bản nháp</option>
-                                        <option value="ACTIVE">Đăng ngay</option>
+                                        <option value="">
+                                            {isLoadingCategories ? "Đang tải danh mục..." : "Chọn danh mục"}
+                                        </option>
+                                        {categories.map((item) => (
+                                            <option key={item.category_id} value={item.category_id}>
+                                                {item.name}
+                                            </option>
+                                        ))}
                                     </select>
+                                    {categoryError && (
+                                        <p className="mt-1 text-[12px] text-[#C62828]">{categoryError}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -228,7 +282,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                                 <textarea
                                     rows={4}
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => setField("description", e.target.value)}
                                     className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900]"
                                     placeholder="Nhập mô tả chi tiết về sản phẩm..."
                                 />
@@ -243,7 +297,18 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                             <div className="flex gap-4 overflow-x-auto pb-2">
                                 {images.map((img, index) => (
                                     <div key={index} className="relative w-24 h-24 rounded-[4px] border border-[#E6E6E6] overflow-hidden flex-shrink-0 group">
-                                        <img src={img.url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                                        <img src={img.previewUrl} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                                        {img.isUploading && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/75 text-[#222222]">
+                                                <Loader2 className="mb-1 h-5 w-5 animate-spin" />
+                                                <span className="text-[10px] font-bold">Đang tải</span>
+                                            </div>
+                                        )}
+                                        {img.error && !img.isUploading && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-[#FCF4F4]/90 px-2 text-center text-[10px] font-bold text-[#C62828]">
+                                                Tải lỗi
+                                            </div>
+                                        )}
                                         <button
                                             type="button"
                                             onClick={() => removeImage(index)}
@@ -259,21 +324,25 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                                     </div>
                                 ))}
 
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-24 h-24 rounded-[4px] border-2 border-dashed border-[#D5D9D9] flex flex-col items-center justify-center text-[#565959] hover:bg-[#F7F7F7] hover:border-[#FF9900] hover:text-[#FF9900] transition-colors flex-shrink-0"
+                                <label
+                                    className={`w-24 h-24 rounded-[4px] border-2 border-dashed border-[#D5D9D9] flex flex-col items-center justify-center text-[#565959] hover:bg-[#F7F7F7] hover:border-[#FF9900] hover:text-[#FF9900] transition-colors flex-shrink-0 ${
+                                        isUploading ? "pointer-events-none opacity-60" : "cursor-pointer"
+                                    }`}
                                 >
-                                    <Upload className="w-6 h-6 mb-1" />
+                                    {isUploading ? (
+                                        <Loader2 className="w-6 h-6 mb-1 animate-spin" />
+                                    ) : (
+                                        <Upload className="w-6 h-6 mb-1" />
+                                    )}
                                     <span className="text-[11px] font-medium">Tải ảnh lên</span>
-                                </button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                    accept="image/jpeg, image/png, image/webp"
-                                    className="hidden"
-                                />
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        accept="image/jpeg, image/png, image/webp"
+                                        className="sr-only"
+                                    />
+                                </label>
                             </div>
                         </div>
 
@@ -346,7 +415,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                                                 </label>
                                                 <select
                                                     value={variant.condition}
-                                                    onChange={(e) => updateVariant(index, "condition", e.target.value as VariantForm["condition"])}
+                                                    onChange={(e) => updateVariant(index, "condition", e.target.value as VendorProductVariantForm["condition"])}
                                                     className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900]"
                                                 >
                                                     <option value="NEW">Mới 100%</option>
@@ -373,20 +442,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
 
                                             <div>
                                                 <label className="block text-[13px] font-bold text-[#222222] mb-1">
-                                                    Tiền cọc (VNĐ)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={variant.deposit}
-                                                    onChange={(e) => updateVariant(index, "deposit", e.target.value)}
-                                                    className="w-full border border-[#D5D9D9] rounded-[4px] px-3 py-2 text-[14px] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900]"
-                                                    placeholder="Ví dụ: 500000"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-[13px] font-bold text-[#222222] mb-1">
                                                     Số lượng tồn kho <span className="text-red-500">*</span>
                                                 </label>
                                                 <input
@@ -403,13 +458,14 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                                 ))}
                             </div>
                         </div>
+
                     </form>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E6E6E6] bg-[#F7F7F7]">
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={handleClose}
                         disabled={isSubmitting}
                         className="px-5 py-2.5 rounded-[4px] text-[14px] font-bold text-[#222222] border border-[#D5D9D9] bg-white hover:bg-[#F7F7F7] disabled:opacity-50"
                     >

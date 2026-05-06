@@ -3,7 +3,6 @@ import type { CartItem } from "@/types/cart";
 import type { CartStockIssue } from "@/lib/cart-stock";
 import {
     formatPrice,
-    getItemDepositTotal,
     getItemRentTotal,
     getRentalDays,
 } from "./checkout-data";
@@ -11,12 +10,16 @@ import {
 type CheckoutItemCardProps = {
     item: CartItem;
     stockIssue?: CartStockIssue;
+    onUpdateQuantity: (id: string, quantity: number) => void;
 };
 
-export default function CheckoutItemCard({ item, stockIssue }: CheckoutItemCardProps) {
+export default function CheckoutItemCard({
+    item,
+    stockIssue,
+    onUpdateQuantity,
+}: CheckoutItemCardProps) {
     const rentalDays = getRentalDays(item);
     const totalRent = getItemRentTotal(item);
-    const totalDeposit = getItemDepositTotal(item);
 
     return (
         <article className="flex flex-col gap-4 p-4 sm:flex-row">
@@ -58,9 +61,30 @@ export default function CheckoutItemCard({ item, stockIssue }: CheckoutItemCardP
                             </span>
                         </div>
 
-                        <div className="mb-1">
-                            <span className="text-[#565959]">Số lượng:</span>{" "}
-                            <span className="font-bold text-[#222222]">{item.quantity}</span>
+                        <div className="mb-3">
+                            <span className="mb-1 block text-[#565959]">Số lượng:</span>
+                            <div className="inline-flex items-center rounded-[4px] border border-[#D5D9D9] bg-[#F7F7F7] shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                                    disabled={item.quantity <= 1}
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
+                                    aria-label="Giảm số lượng"
+                                >
+                                    -
+                                </button>
+                                <span className="min-w-8 px-2 text-center text-[14px] font-bold text-[#222222]">
+                                    {item.quantity}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    aria-label="Tăng số lượng"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
 
                         {item.size && (
@@ -87,12 +111,6 @@ export default function CheckoutItemCard({ item, stockIssue }: CheckoutItemCardP
                             </span>
                         </div>
 
-                        <div>
-                            <span className="text-[#565959]">Tiền cọc:</span>{" "}
-                            <span className="font-bold text-[#B12704]">
-                                {formatPrice(totalDeposit)}đ
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>

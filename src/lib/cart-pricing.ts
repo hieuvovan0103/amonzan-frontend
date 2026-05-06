@@ -28,5 +28,5 @@ export function getItemRentTotal(item: CartItem) {
 }
 
 export function getItemDepositTotal(item: CartItem) {
-    return (item.depositRequirement ?? 0) * item.quantity;
+    return 0;
 }

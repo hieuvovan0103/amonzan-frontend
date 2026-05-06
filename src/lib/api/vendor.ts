@@ -58,10 +58,12 @@ export async function createVendorProduct(payload: any): Promise<ApiProduct> {
     method: "POST",
     body: JSON.stringify(payload),
   });
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || "Tạo sản phẩm thất bại.");
   }
+
   return response.json();
 }
 
@@ -133,7 +135,7 @@ export async function updateMyShop(payload: UpdateShopPayload): Promise<ShopProf
 
 export async function updateVendorProductStatus(
   productId: string,
-  status: "DRAFT" | "ACTIVE" | "ARCHIVED"
+  status: "DRAFT" | "ARCHIVED"
 ): Promise<ApiProduct> {
   const response = await fetchWithAuth(`/vendor/products/${productId}/status`, {
     method: "PATCH",
@@ -143,6 +145,19 @@ export async function updateVendorProductStatus(
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || "Cập nhật trạng thái thất bại.");
   }
+  return response.json();
+}
+
+export async function submitVendorProductForReview(productId: string): Promise<ApiProduct> {
+  const response = await fetchWithAuth(`/vendor/products/${productId}/submit-review`, {
+    method: "PATCH",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể gửi sản phẩm để duyệt.");
+  }
+
   return response.json();
 }
 
@@ -179,6 +194,62 @@ export async function rejectVendorOrder(orderId: string) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || "Không thể từ chối đơn thuê.");
+  }
+
+  return response.json();
+}
+
+export async function getVendorEarlyReturnRequests() {
+  const response = await fetchWithAuth("/orders/vendor/early-return-requests");
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể tải yêu cầu trả hàng sớm.");
+  }
+
+  const payload = await response.json();
+  return payload.requests ?? [];
+}
+
+export async function approveEarlyReturn(orderId: string) {
+  const response = await fetchWithAuth(`/orders/vendor/${orderId}/early-return/approve`, {
+    method: "PATCH",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể chấp nhận yêu cầu trả sớm.");
+  }
+
+  return response.json();
+}
+
+export async function rejectEarlyReturn(orderId: string, reason: string) {
+  const response = await fetchWithAuth(`/orders/vendor/${orderId}/early-return/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể từ chối yêu cầu trả sớm.");
+  }
+
+  return response.json();
+}
+
+export async function confirmReturnReceived(
+  orderId: string,
+  payload: { returnedAt?: string; returnConditionNote?: string; damaged?: boolean },
+) {
+  const response = await fetchWithAuth(`/orders/vendor/${orderId}/return/confirm-received`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể xác nhận đã nhận hàng.");
   }
 
   return response.json();

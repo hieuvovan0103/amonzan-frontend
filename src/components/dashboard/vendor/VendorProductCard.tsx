@@ -16,6 +16,28 @@ export default function VendorProductCard({
         
     const basePrice = product.product_variants?.[0]?.base_daily_rate || 0;
     const totalStock = product.product_variants?.reduce((sum, v) => sum + v.available_stock, 0) || 0;
+    const statusConfig = {
+        DRAFT: {
+            label: "Bản nháp",
+            className: "bg-[#F7F7F7] border-[#D5D9D9] text-[#565959]",
+        },
+        PENDING_REVIEW: {
+            label: "Chờ admin duyệt",
+            className: "bg-[#FFF8E6] border-[#F0C14B] text-[#8A5A00]",
+        },
+        APPROVED: {
+            label: "Đã duyệt",
+            className: "bg-[#E6F4EA] border-[#007600] text-[#007600]",
+        },
+        REJECTED: {
+            label: "Bị từ chối",
+            className: "bg-[#FCF4F4] border-[#C62828] text-[#C62828]",
+        },
+        ARCHIVED: {
+            label: "Đã lưu trữ",
+            className: "bg-[#F3F4F6] border-[#9CA3AF] text-[#4B5563]",
+        },
+    }[product.status];
 
     return (
         <div
@@ -59,32 +81,9 @@ export default function VendorProductCard({
                     <span className="text-[11px] font-bold text-[#C62828]">vnđ/ngày</span>
                 </div>
 
-                {product.status === "ACTIVE" && (
-                    <button
-                        type="button"
-                        className="w-full bg-[#E6F4EA] border border-[#007600] text-[#007600] font-bold text-[13px] py-1.5 rounded-[8px]"
-                    >
-                        Đang hoạt động
-                    </button>
-                )}
-
-                {product.status === "DRAFT" && (
-                    <button
-                        type="button"
-                        className="w-full bg-[#F7F7F7] border border-[#D5D9D9] text-[#565959] font-bold text-[13px] py-1.5 rounded-[8px]"
-                    >
-                        Bản nháp
-                    </button>
-                )}
-
-                {product.status === "ARCHIVED" && (
-                    <button
-                        type="button"
-                        className="w-full bg-[#FCF4F4] border border-[#C62828] text-[#C62828] font-bold text-[13px] py-1.5 rounded-[8px]"
-                    >
-                        Đã lưu trữ
-                    </button>
-                )}
+                <div className={`w-full rounded-[8px] border py-1.5 text-center text-[13px] font-bold ${statusConfig.className}`}>
+                    {statusConfig.label}
+                </div>
             </div>
         </div>
     );
