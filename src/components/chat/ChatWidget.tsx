@@ -2,23 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { sendChatMessage, type ChatMessage, type ChatModel } from '@/lib/api/chatbot';
 
-const WELCOME_MESSAGES: Record<ChatModel, ChatMessage> = {
-  openai: {
-    role: 'assistant',
-    content: 'Xin chào! Tôi là Cosplay AI 🎭 (ChatGPT) — tôi có thể giúp bạn giải đáp mọi thắc mắc về cosplay. Bạn muốn hỏi gì nào?',
-  },
-  gemini: {
-    role: 'assistant',
-    content: 'Xin chào! Tôi là Cosplay AI 🎭 (Gemini) — tôi có thể giúp bạn giải đáp mọi thắc mắc về cosplay. Bạn muốn hỏi gì nào?',
-  },
+const WELCOME_MESSAGE: ChatMessage = {
+  role: 'assistant',
+  content: 'Xin chào! Tôi là trợ lý AI 🎭 — tôi có thể giúp bạn giải đáp mọi thắc mắc về cosplay. Bạn muốn hỏi gì nào?',
 };
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [model, setModel] = useState<ChatModel>('openai');
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGES.openai]);
+  const [model, setModel] = useState<ChatModel>('gemini');
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -34,7 +29,7 @@ export default function ChatWidget() {
   function handleModelSwitch(newModel: ChatModel) {
     if (newModel === model || isLoading) return;
     setModel(newModel);
-    setMessages([WELCOME_MESSAGES[newModel]]);
+    setMessages([WELCOME_MESSAGE]);
     setInput('');
   }
 
@@ -80,7 +75,7 @@ export default function ChatWidget() {
               <div className="flex items-center gap-2">
                 <span className="text-xl">🎭</span>
                 <div>
-                  <p className="text-white font-semibold text-sm leading-tight">Trợ lý Cosplay</p>
+                  <p className="text-white font-semibold text-sm leading-tight">Trợ lý AI</p>
                   <p className="text-purple-100 text-xs">Luôn sẵn sàng hỗ trợ</p>
                 </div>
               </div>
@@ -96,16 +91,6 @@ export default function ChatWidget() {
             {/* Model toggle */}
             <div className="flex rounded-lg overflow-hidden bg-white/10 p-0.5 gap-0.5">
               <button
-                onClick={() => handleModelSwitch('openai')}
-                className={`flex-1 text-xs py-1 px-2 rounded-md transition-all font-medium ${
-                  model === 'openai'
-                    ? 'bg-white text-purple-700'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                🤖 ChatGPT
-              </button>
-              <button
                 onClick={() => handleModelSwitch('gemini')}
                 className={`flex-1 text-xs py-1 px-2 rounded-md transition-all font-medium ${
                   model === 'gemini'
@@ -114,6 +99,16 @@ export default function ChatWidget() {
                 }`}
               >
                 ✨ Gemini
+              </button>
+              <button
+                onClick={() => handleModelSwitch('openai')}
+                className={`flex-1 text-xs py-1 px-2 rounded-md transition-all font-medium ${
+                  model === 'openai'
+                    ? 'bg-white text-purple-700'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                🤖 ChatGPT
               </button>
             </div>
           </div>
@@ -129,7 +124,21 @@ export default function ChatWidget() {
                       : 'bg-white text-gray-800 rounded-bl-sm shadow-sm border border-gray-100'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm">{children}</li>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}
