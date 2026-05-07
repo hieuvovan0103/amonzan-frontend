@@ -1,4 +1,4 @@
-import { BASE_URL } from '@/lib/config';
+import { fetchWithAuth } from '@/lib/apiClient';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -11,14 +11,14 @@ export async function sendChatMessage(
   messages: ChatMessage[],
   model: ChatModel = 'openai',
 ): Promise<string> {
-  const response = await fetch(`${BASE_URL}/chat/message`, {
+  const response = await fetchWithAuth('/chat/message', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages, model }),
   });
 
   if (!response.ok) {
-    throw new Error('Không thể kết nối với chatbot. Vui lòng thử lại.');
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || 'Không thể kết nối với chatbot. Vui lòng thử lại.');
   }
 
   const data = await response.json();

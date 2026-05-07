@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AlertTriangle, CalendarDays, Loader2, MessageSquarePlus, PackageCheck } from "lucide-react";
 import { confirmRenterReceived, type PaidOrder } from "@/lib/api/orders";
 import { reportReview } from "@/lib/api/reviews";
+import ReportFormModal, { type ReportFormValues } from "@/components/reports/ReportFormModal";
 import { useEarlyReturnModalStore } from "@/stores/useEarlyReturnModalStore";
 import { useReturnModalStore } from "@/stores/returnModalStore";
 import { useReturnComplaintModalStore } from "@/stores/returnComplaintModalStore";
@@ -32,6 +33,10 @@ function toLocalDateKey(value: Date) {
     const month = String(value.getMonth() + 1).padStart(2, "0");
     const day = String(value.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
 }
 
 function getStatusLabel(status: string) {
@@ -72,6 +77,7 @@ function getEarlyReturnStatusLabel(status: string) {
 export default function OrderCard({ order, onChanged }: OrderCardProps) {
     const [isConfirmingReceived, setIsConfirmingReceived] = useState(false);
     const [isReportingReview, setIsReportingReview] = useState(false);
+    const [isReportFormOpen, setIsReportFormOpen] = useState(false);
     const [actionError, setActionError] = useState("");
     const openEarlyReturnModal = useEarlyReturnModalStore((state) => state.open);
     const openReturnModal = useReturnModalStore((state) => state.open);
@@ -98,27 +104,33 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
         try {
             await confirmRenterReceived(order.orderId);
             await onChanged?.();
-        } catch (error: any) {
-            setActionError(error.message || "Không thể xác nhận đã nhận hàng.");
+        } catch (error: unknown) {
+            setActionError(getErrorMessage(error, "Không thể xác nhận đã nhận hàng."));
         } finally {
             setIsConfirmingReceived(false);
         }
     };
 
-    const handleReportRenterReview = async () => {
+    const handleReportRenterReview = async (values: ReportFormValues) => {
         if (!order.renterReview) return;
 
-        const reason = window.prompt("Nhập lý do báo cáo đánh giá này:");
-        if (!reason?.trim()) return;
+        const reportReason = [
+            `Loại: ${values.category}`,
+            `Lý do: ${values.reason}`,
+            values.detail ? `Chi tiết: ${values.detail}` : null,
+        ]
+            .filter(Boolean)
+            .join("\n");
 
         setIsReportingReview(true);
         setActionError("");
 
         try {
-            await reportReview(order.renterReview.reviewId, reason.trim());
+            await reportReview(order.renterReview.reviewId, reportReason);
             await onChanged?.();
-        } catch (error: any) {
-            setActionError(error.message || "Không thể báo cáo đánh giá.");
+        } catch (error: unknown) {
+            setActionError(getErrorMessage(error, "Không thể báo cáo đánh giá."));
+            throw error;
         } finally {
             setIsReportingReview(false);
         }
@@ -259,7 +271,7 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
                             </div>
                             <button
                                 type="button"
-                                onClick={handleReportRenterReview}
+                                onClick={() => setIsReportFormOpen(true)}
                                 disabled={isReportingReview || order.renterReview.reportStatus === "PENDING"}
                                 className="rounded-[4px] border border-[#F5C2C7] bg-white px-3 py-2 text-[12px] font-bold text-[#842029] hover:bg-[#FFF5F5] disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -267,6 +279,15 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
                             </button>
                         </div>
                     </div>
+                ) : null}
+
+                {isReportFormOpen && order.renterReview ? (
+                    <ReportFormModal
+                        title="Báo cáo đánh giá từ shop"
+                        subjectLabel={`Đánh giá từ shop ${order.renterReview.shopName}`}
+                        onClose={() => setIsReportFormOpen(false)}
+                        onSubmit={handleReportRenterReview}
+                    />
                 ) : null}
 
                 {actionError ? (

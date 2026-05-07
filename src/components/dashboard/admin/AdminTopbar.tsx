@@ -1,8 +1,9 @@
 "use client";
 
-import { Search, Home, LogOut, Menu, Bell } from "lucide-react";
+import { Search, Home, LogOut, Menu } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/useAuthStore";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function AdminTopbar({ onOpenMobile }: { onOpenMobile?: () => void }) {
     const { signOut } = useAuthStore();
@@ -28,13 +29,10 @@ export default function AdminTopbar({ onOpenMobile }: { onOpenMobile?: () => voi
             </div>
 
             <div className="flex items-center gap-4">
-                <button
-                    type="button"
-                    className="p-2.5 hover:bg-[#F7F7F7] rounded-full relative transition-colors"
-                >
-                    <Bell className="w-5 h-5 text-[#565959]" />
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#C62828] rounded-full border-2 border-white"></span>
-                </button>
+                <NotificationBell
+                    buttonClassName="p-2.5 hover:bg-[#F7F7F7] rounded-full text-[#565959]"
+                    iconClassName="w-5 h-5"
+                />
 
                 <div className="flex items-center gap-3 pl-5 border-l border-[#E6E6E6] cursor-pointer group relative">
                     <div className="text-right hidden sm:block">

@@ -7,8 +7,15 @@ import { sendChatMessage, type ChatMessage, type ChatModel } from '@/lib/api/cha
 
 const WELCOME_MESSAGE: ChatMessage = {
   role: 'assistant',
-  content: 'Xin chào! Tôi là trợ lý AI 🎭 — tôi có thể giúp bạn giải đáp mọi thắc mắc về cosplay. Bạn muốn hỏi gì nào?',
+  content:
+    'Xin chào! Tôi là trợ lý AI cosplay. Tôi có thể giúp bạn giải đáp thắc mắc về cosplay. Bạn muốn hỏi gì nào?',
 };
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.';
+}
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,10 +54,10 @@ export default function ChatWidget() {
       const history = updatedMessages.slice(1);
       const reply = await sendChatMessage(history, model);
       setMessages([...updatedMessages, { role: 'assistant', content: reply }]);
-    } catch {
+    } catch (error: unknown) {
       setMessages([
         ...updatedMessages,
-        { role: 'assistant', content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.' },
+        { role: 'assistant', content: getErrorMessage(error) },
       ]);
     } finally {
       setIsLoading(false);

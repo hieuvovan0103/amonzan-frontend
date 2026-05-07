@@ -4,6 +4,7 @@ import {
     Box,
     LayoutDashboard,
     Menu,
+    MessageSquareWarning,
     Package,
     Settings,
     ShieldAlert,
@@ -30,7 +31,6 @@ export default function AdminSidebar({
     isSidebarOpen,
     setIsSidebarOpen,
     isMobileOpen,
-    setIsMobileOpen,
 }: AdminSidebarProps) {
     return (
         <aside
@@ -91,6 +91,13 @@ export default function AdminSidebar({
                     collapsed={!isSidebarOpen}
                 />
                 <AdminNavItem
+                    icon={MessageSquareWarning}
+                    label="Báo cáo đánh giá"
+                    active={activeTab === "reviews"}
+                    onClick={() => setActiveTab("reviews")}
+                    collapsed={!isSidebarOpen}
+                />
+                <AdminNavItem
                     icon={Store}
                     label="Duyệt vendor"
                     active={activeTab === "vendor_verification"}
@@ -122,7 +129,6 @@ export default function AdminSidebar({
                     active={activeTab === "disputes"}
                     onClick={() => setActiveTab("disputes")}
                     collapsed={!isSidebarOpen}
-                    badge="12"
                 />
             </nav>
 

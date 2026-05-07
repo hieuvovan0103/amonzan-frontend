@@ -8,6 +8,7 @@ import LoginModal from "@/components/login/LoginModal";
 import PhoneVerificationGate from "@/components/providers/PhoneVerificationGate";
 import ToastContainer from "@/components/ui/ToastContainer";
 import ChatWidget from "@/components/chat/ChatWidget";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function ClientLayout({
     children,
@@ -15,6 +16,7 @@ export default function ClientLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const accessToken = useAuthStore((state) => state.session?.access_token);
     const isDashboard = pathname?.startsWith("/dashboard");
     const isVendor = pathname?.startsWith("/vendor");
     const hideGlobalNavAndFooter = isDashboard || isVendor;
@@ -31,7 +33,7 @@ export default function ClientLayout({
             <PhoneVerificationGate />
             <LoginModal />
             <ToastContainer />
-            <ChatWidget />
+            {accessToken ? <ChatWidget /> : null}
         </>
     );
 }

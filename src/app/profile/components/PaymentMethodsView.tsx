@@ -1,23 +1,4 @@
-import { CreditCard, Landmark, Plus, ShieldCheck } from "lucide-react";
-
-const bankAccounts = [
-    {
-        id: 1,
-        name: "VCB - Ngân hàng TMCP Ngoại thương Việt Nam",
-        fullName: "NGUYEN VAN A",
-        branch: "Chi nhánh Cần Thơ",
-        number: "**101",
-        isDefault: true,
-    },
-    {
-        id: 2,
-        name: "TCB - Ngân hàng TMCP Kỹ thương Việt Nam",
-        fullName: "NGUYEN VAN A",
-        branch: "Chi nhánh Hồ Chí Minh",
-        number: "**202",
-        isDefault: false,
-    },
-];
+import { CreditCard, Landmark, Plus } from "lucide-react";
 
 export default function PaymentMethodsView() {
     return (
@@ -36,7 +17,11 @@ export default function PaymentMethodsView() {
                             <h3 className="text-[16px] font-bold text-[#222222]">Thẻ thanh toán</h3>
                             <p className="mt-1 text-[13px] text-[#565959]">Dùng để thanh toán đơn thuê nhanh hơn.</p>
                         </div>
-                        <button className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-[#FF9900] px-4 py-2 text-[13px] font-bold text-[#111111]">
+                        <button
+                            type="button"
+                            disabled
+                            className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-[4px] bg-[#E6E6E6] px-4 py-2 text-[13px] font-bold text-[#565959]"
+                        >
                             <Plus className="h-4 w-4" />
                             Thêm thẻ
                         </button>
@@ -57,39 +42,24 @@ export default function PaymentMethodsView() {
                             <h3 className="text-[16px] font-bold text-[#222222]">Tài khoản ngân hàng</h3>
                             <p className="mt-1 text-[13px] text-[#565959]">Dùng cho hoàn tiền và đối soát giao dịch.</p>
                         </div>
-                        <button className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-[#FF9900] px-4 py-2 text-[13px] font-bold text-[#111111]">
+                        <button
+                            type="button"
+                            disabled
+                            className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-[4px] bg-[#E6E6E6] px-4 py-2 text-[13px] font-bold text-[#565959]"
+                        >
                             <Plus className="h-4 w-4" />
                             Thêm tài khoản
                         </button>
                     </div>
 
-                    <div className="divide-y divide-[#E6E6E6]">
-                        {bankAccounts.map((bank) => (
-                            <div key={bank.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#F7F7F7]">
-                                        <Landmark className="h-5 w-5 text-[#565959]" />
-                                    </div>
-                                    <div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-bold text-[#222222]">{bank.name}</span>
-                                            {bank.isDefault ? (
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-bold text-[#007600]">
-                                                    <ShieldCheck className="h-3 w-3" />
-                                                    Mặc định
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                        <div className="mt-1 text-[13px] text-[#565959]">
-                                            {bank.fullName} - {bank.branch}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-[15px] font-bold tracking-widest text-[#222222]">
-                                    {bank.number}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
+                        <Landmark className="mb-3 h-10 w-10 text-[#A0A0A0]" />
+                        <div className="text-[14px] font-bold text-[#222222]">
+                            Chưa liên kết tài khoản ngân hàng
+                        </div>
+                        <p className="mt-1 max-w-[420px] text-[13px] text-[#565959]">
+                            Tài khoản hoàn tiền sẽ được thêm khi tính năng quản lý tài khoản ngân hàng được kích hoạt.
+                        </p>
                     </div>
                 </div>
             </div>

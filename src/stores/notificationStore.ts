@@ -7,6 +7,10 @@ import {
 } from "@/lib/api/notifications";
 import type { AppNotification } from "@/types/notification";
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
+}
+
 type NotificationState = {
     isOpen: boolean;
     notifications: AppNotification[];
@@ -19,6 +23,7 @@ type NotificationState = {
     fetchUnreadCount: () => Promise<void>;
     markAsRead: (notificationId: string) => Promise<AppNotification | null>;
     markAllAsRead: () => Promise<void>;
+    reset: () => void;
 };
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -35,6 +40,14 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     closeDropdown: () => set({ isOpen: false }),
 
+    reset: () => set({
+        isOpen: false,
+        notifications: [],
+        unreadCount: 0,
+        loading: false,
+        error: "",
+    }),
+
     fetchNotifications: async () => {
         set({ loading: true, error: "" });
         try {
@@ -43,8 +56,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
                 notifications: data.notifications,
                 unreadCount: data.unreadCount,
             });
-        } catch (err: any) {
-            set({ error: err.message || "Không thể tải thông báo." });
+        } catch (err: unknown) {
+            set({ error: getErrorMessage(err, "Không thể tải thông báo.") });
             throw err;
         } finally {
             set({ loading: false });

@@ -33,8 +33,11 @@ export type AdminReview = {
   is_hidden: boolean;
   hidden_at: string | null;
   reported_at: string | null;
+  reported_by_user_id?: string | null;
   report_reason: string | null;
   report_status: string | null;
+  reporter_name?: string | null;
+  reporter_email?: string | null;
   reviewer_name: string;
   reviewer_email: string | null;
   product: {
@@ -154,6 +157,21 @@ export async function hideAdminReview(reviewId: string) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || "Không thể ẩn đánh giá.");
+  }
+}
+
+export async function updateAdminReviewReportStatus(
+  reviewId: string,
+  status: "RESOLVED" | "DISMISSED",
+) {
+  const response = await fetchWithAuth(`/admin/reviews/${reviewId}/report-status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể cập nhật trạng thái báo cáo.");
   }
 }
 

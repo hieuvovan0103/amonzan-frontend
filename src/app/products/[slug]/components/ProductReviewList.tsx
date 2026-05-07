@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import type { ProductReview } from "@/lib/api/products";
 import { reportReview } from "@/lib/api/reviews";
+import ReportFormModal, { type ReportFormValues } from "@/components/reports/ReportFormModal";
 import ProductReviewStars from "./ProductReviewStars";
 
 type ProductReviewListProps = {
@@ -17,11 +19,22 @@ function formatDate(value: string) {
 }
 
 export default function ProductReviewList({ reviews }: ProductReviewListProps) {
-    const handleReport = async (reviewId: string) => {
-        const reason = window.prompt("Nhập lý do báo cáo đánh giá này:");
-        if (!reason?.trim()) return;
-        await reportReview(reviewId, reason.trim());
-        window.alert("Đã gửi báo cáo đánh giá đến admin.");
+    const [reportingReview, setReportingReview] = useState<ProductReview | null>(null);
+    const [reportedReviewIds, setReportedReviewIds] = useState<string[]>([]);
+
+    const handleReport = async (values: ReportFormValues) => {
+        if (!reportingReview) return;
+
+        const reportReason = [
+            `Loại: ${values.category}`,
+            `Lý do: ${values.reason}`,
+            values.detail ? `Chi tiết: ${values.detail}` : null,
+        ]
+            .filter(Boolean)
+            .join("\n");
+
+        await reportReview(reportingReview.id, reportReason);
+        setReportedReviewIds((current) => [...new Set([...current, reportingReview.id])]);
     };
 
     if (reviews.length === 0) {
@@ -38,7 +51,8 @@ export default function ProductReviewList({ reviews }: ProductReviewListProps) {
     }
 
     return (
-        <div className="space-y-6">
+        <>
+            <div className="space-y-6">
             {reviews.map((review) => (
                 <article key={review.id} className="border-b border-[#E6E6E6] pb-6 last:border-b-0">
                     <div className="mb-2 flex items-center justify-between gap-3">
@@ -70,13 +84,24 @@ export default function ProductReviewList({ reviews }: ProductReviewListProps) {
                     )}
                     <button
                         type="button"
-                        onClick={() => handleReport(review.id)}
-                        className="mt-3 text-[12px] font-semibold text-[#842029] hover:underline"
+                        onClick={() => setReportingReview(review)}
+                        disabled={reportedReviewIds.includes(review.id)}
+                        className="mt-3 text-[12px] font-semibold text-[#842029] hover:underline disabled:cursor-not-allowed disabled:text-[#6B7280] disabled:no-underline"
                     >
-                        Báo cáo đánh giá
+                        {reportedReviewIds.includes(review.id) ? "Đã báo cáo" : "Báo cáo đánh giá"}
                     </button>
                 </article>
             ))}
-        </div>
+            </div>
+
+            {reportingReview ? (
+                <ReportFormModal
+                    title="Báo cáo đánh giá"
+                    subjectLabel={`Đánh giá của ${reportingReview.reviewerName}`}
+                    onClose={() => setReportingReview(null)}
+                    onSubmit={handleReport}
+                />
+            ) : null}
+        </>
     );
 }
