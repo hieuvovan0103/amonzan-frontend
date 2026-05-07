@@ -1,17 +1,47 @@
-import { Camera, Clock, X } from "lucide-react";
-import { AdminOrder } from "@/types/admin";
+import { Camera, Clock, Loader2, X } from "lucide-react";
 import AdminBadge from "@/components/dashboard/admin/AdminBadge";
+import { useEffect, useState } from "react";
+import { getAdminOrderDetail, type AdminOrderDetail } from "@/lib/api/adminOrders";
 
 type OrderDetailDrawerProps = {
-    order: AdminOrder | null;
+    orderId: string | null;
     onClose: () => void;
 };
 
 export default function OrderDetailDrawer({
-    order,
+    orderId,
     onClose,
 }: OrderDetailDrawerProps) {
-    if (!order) return null;
+    const [order, setOrder] = useState<AdminOrderDetail | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!orderId) return;
+
+        let isCancelled = false;
+        const timer = window.setTimeout(() => {
+            setIsLoading(true);
+            setError(null);
+            void getAdminOrderDetail(orderId)
+                .then((payload) => {
+                    if (!isCancelled) setOrder(payload.order);
+                })
+                .catch((err: unknown) => {
+                    if (!isCancelled) setError(err instanceof Error ? err.message : "Không thể tải chi tiết đơn thuê.");
+                })
+                .finally(() => {
+                    if (!isCancelled) setIsLoading(false);
+                });
+        }, 0);
+
+        return () => {
+            isCancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [orderId]);
+
+    if (!orderId) return null;
 
     return (
         <>
@@ -23,7 +53,7 @@ export default function OrderDetailDrawer({
             <div className="fixed top-0 right-0 h-full w-[450px] bg-[#F7F7F7] shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-[70] flex flex-col overflow-hidden animate-in slide-in-from-right">
                 <div className="h-[64px] bg-white border-b border-[#E6E6E6] flex items-center justify-between px-6 flex-shrink-0">
                     <h2 className="text-[18px] font-bold text-[#222222]">
-                        Chi tiết đơn {order.id}
+                        Chi tiết đơn {orderId.slice(0, 8)}
                     </h2>
                     <button
                         type="button"
@@ -35,6 +65,16 @@ export default function OrderDetailDrawer({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {isLoading ? (
+                        <div className="rounded-[12px] border border-[#E6E6E6] bg-white p-8 text-center text-[14px] text-[#565959]">
+                            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin" />
+                            Đang tải chi tiết đơn thuê...
+                        </div>
+                    ) : error ? (
+                        <div className="rounded-[12px] border border-red-100 bg-red-50 p-4 text-[13px] font-semibold text-[#842029]">
+                            {error}
+                        </div>
+                    ) : order ? (
                     <div className="bg-white p-5 rounded-[12px] border border-[#E6E6E6] shadow-sm">
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#E6E6E6]">
                             <span className="text-[13px] text-[#565959] font-medium">
@@ -43,6 +83,7 @@ export default function OrderDetailDrawer({
                             <AdminBadge status={order.status} />
                         </div>
                     </div>
+                    ) : null}
 
                     <div>
                         <h3 className="text-[14px] font-bold text-[#222222] mb-4 flex items-center gap-2">
@@ -68,11 +109,11 @@ export default function OrderDetailDrawer({
                             </div>
 
                             <div
-                                className={`relative ${order.status === "PENDING" ? "opacity-50" : ""
+                                className={`relative ${order?.status === "PENDING" ? "opacity-50" : ""
                                     }`}
                             >
                                 <div
-                                    className={`absolute -left-[23px] w-4 h-4 rounded-full border-2 border-white ${order.status === "PENDING"
+                                    className={`absolute -left-[23px] w-4 h-4 rounded-full border-2 border-white ${order?.status === "PENDING"
                                             ? "bg-[#D5D9D9]"
                                             : "bg-green-500"
                                         }`}
@@ -81,7 +122,7 @@ export default function OrderDetailDrawer({
                                     Người thuê xác nhận nhận hàng
                                 </div>
 
-                                {order.status !== "PENDING" && (
+                                {order?.status && order.status !== "PENDING" && (
                                     <button
                                         type="button"
                                         className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#D5D9D9] rounded-[6px] text-[#007185] hover:bg-[#F7F7F7] font-medium transition-colors"
@@ -103,7 +144,7 @@ export default function OrderDetailDrawer({
                             <div className="flex justify-between">
                                 <span className="text-[#565959]">Tiền thuê đã thu:</span>
                                 <span className="font-bold text-[#222222]">
-                                    {order.total.toLocaleString()} ₫
+                                    {order ? order.amounts.totalAmount.toLocaleString() : 0} ₫
                                 </span>
                             </div>
                         </div>

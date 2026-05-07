@@ -6,10 +6,12 @@ import {
     ChevronRight,
     ClipboardCheck,
     Home,
+    LayoutDashboard,
     Package,
     RotateCcw,
     Settings,
     Store,
+    TicketPercent,
 } from "lucide-react";
 import Link from "next/link";
 import { VendorTab } from "@/types/vendor";
@@ -21,9 +23,11 @@ type VendorSidebarProps = {
 };
 
 const NAV_ITEMS: { id: VendorTab | null; label: string; icon: React.ElementType; badge?: string }[] = [
+    { id: "vendor_overview", label: "Tổng quan", icon: LayoutDashboard },
     { id: "vendor_listings", label: "Sản phẩm", icon: Package },
     { id: "vendor_orders", label: "Duyệt đơn thuê", icon: ClipboardCheck },
     { id: "vendor_returns", label: "Yêu cầu hoàn trả", icon: RotateCcw },
+    { id: "vendor_vouchers", label: "Voucher", icon: TicketPercent },
     { id: "rentals_calendar", label: "Lịch cho thuê", icon: CalendarDays },
     { id: null, label: "Thống kê", icon: BarChart3, badge: "Soon" },
     { id: "shop_settings", label: "Cài đặt shop", icon: Settings },

@@ -203,6 +203,33 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
                     </div>
                 ) : null}
 
+                {order.dispute ? (
+                    <div className="mb-4 rounded-[6px] border border-[#F5C2C7] bg-[#FFF5F5] p-3 text-[13px]">
+                        <div className="font-bold text-[#222222]">Tranh chấp</div>
+                        <div className="mt-1 text-[#565959]">
+                            Trạng thái: <strong className="text-[#842029]">{order.dispute.status}</strong>
+                            {order.dispute.resolvedAt ? (
+                                <>
+                                    {" "}· Kết luận lúc{" "}
+                                    <strong className="text-[#222222]">{formatDate(order.dispute.resolvedAt)}</strong>
+                                </>
+                            ) : null}
+                        </div>
+                        {order.dispute.resolution ? (
+                            <div className="mt-2 rounded-[6px] border border-[#E6E6E6] bg-white px-3 py-2 text-[#222222]">
+                                <div className="text-[12px] font-bold text-[#222222]">Kết quả xử lý</div>
+                                <div className="mt-1 whitespace-pre-wrap text-[13px] text-[#222222]">
+                                    {order.dispute.resolution}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-2 text-[13px] text-[#842029]">
+                                Tranh chấp đang được xử lý. Kết quả sẽ hiển thị tại đây sau khi admin kết luận.
+                            </div>
+                        )}
+                    </div>
+                ) : null}
+
                 <div className="divide-y divide-[#E6E6E6] rounded-[8px] border border-[#E6E6E6]">
                     {order.items.map((item) => (
                         <div key={item.orderItemId} className="flex flex-col gap-3 p-3 sm:flex-row sm:gap-4 sm:p-4">

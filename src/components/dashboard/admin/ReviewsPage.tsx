@@ -10,6 +10,7 @@ import {
     type AdminReview,
     updateAdminReviewReportStatus,
 } from "@/lib/api/reviews";
+import SimplePagination from "@/components/ui/SimplePagination";
 
 function formatDate(value: string) {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -27,6 +28,35 @@ function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback;
 }
 
+const reportCategoryLabels: Record<string, string> = {
+    INAPPROPRIATE_CONTENT: "Nội dung không phù hợp",
+    FALSE_INFORMATION: "Thông tin sai sự thật",
+    HARASSMENT: "Quấy rối / xúc phạm",
+    SPAM: "Spam hoặc quảng cáo",
+    OTHER: "Khác",
+};
+
+function humanizeReportReason(reason: string | null) {
+    if (!reason) return "";
+
+    // The app stores report reason as multi-line text:
+    // Loại: <CATEGORY>
+    // Lý do: ...
+    // Chi tiết: ...
+    const lines = reason.split(/\r?\n/);
+    return lines
+        .map((line) => {
+            const trimmed = line.trim();
+            if (!trimmed.toLowerCase().startsWith("loại:")) return line;
+
+            const rawValue = trimmed.slice("loại:".length).trim();
+            const label = reportCategoryLabels[rawValue] ?? rawValue;
+            return `Loại: ${label}`;
+        })
+        .join("\n")
+        .trim();
+}
+
 export default function ReviewsPage() {
     const searchParams = useSearchParams();
     const highlightedReviewId = searchParams.get("reviewId");
@@ -36,6 +66,8 @@ export default function ReviewsPage() {
     const [busyId, setBusyId] = useState<string | null>(null);
     const [filter, setFilter] = useState<ReviewFilter>("REPORTED");
     const [keyword, setKeyword] = useState("");
+    const [page, setPage] = useState(1);
+    const pageSize = 20;
 
     const loadReviews = async () => {
         setIsLoading(true);
@@ -131,6 +163,17 @@ export default function ReviewsPage() {
                     .some((value) => String(value).toLowerCase().includes(normalizedKeyword));
             });
     }, [filter, keyword, reviews]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setPage(1);
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [filter, keyword]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredReviews.length / pageSize));
+    const pageItems = filteredReviews.slice((page - 1) * pageSize, page * pageSize);
 
     const pendingReportCount = reviews.filter((review) => review.report_status === "PENDING").length;
     const hiddenCount = reviews.filter((review) => review.is_hidden).length;
@@ -230,7 +273,7 @@ export default function ReviewsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredReviews.map((review) => (
+                            {pageItems.map((review) => (
                                 <tr
                                     key={review.review_id}
                                     className={`border-b border-[#E6E6E6] align-top hover:bg-[#F9FAFB] ${
@@ -262,9 +305,17 @@ export default function ReviewsPage() {
                                                 Không có nhận xét
                                             </span>
                                         )}
+                                        {review.shop_reply ? (
+                                            <div className="mt-2 rounded-[4px] border border-[#D5D9D9] bg-[#F7F7F7] px-2 py-1 text-[12px] text-[#565959]">
+                                                <span className="font-bold text-[#222222]">
+                                                    Phản hồi shop {review.shop_reply.shop_name || "Shop Amonzan"}:
+                                                </span>{" "}
+                                                {review.shop_reply.content}
+                                            </div>
+                                        ) : null}
                                         {review.report_status === "PENDING" ? (
                                             <div className="mt-2 rounded-[4px] border border-[#F5C2C7] bg-[#FFF5F5] px-2 py-1 text-[12px] font-semibold text-[#842029]">
-                                                Báo cáo: {review.report_reason || "Không có lý do"}
+                                                Báo cáo: {humanizeReportReason(review.report_reason) || "Không có lý do"}
                                                 <div className="mt-1 font-normal text-[#565959]">
                                                     Người báo cáo: {review.reporter_name || review.reporter_email || "Không rõ"}
                                                     {review.reported_at ? ` · ${formatDate(review.reported_at)}` : ""}
@@ -334,6 +385,14 @@ export default function ReviewsPage() {
                     </table>
                 </div>
             )}
+
+            {!isLoading && filteredReviews.length > 0 ? (
+                <SimplePagination
+                    page={Math.min(page, totalPages)}
+                    totalPages={totalPages}
+                    onPageChange={(next) => setPage(Math.min(Math.max(1, next), totalPages))}
+                />
+            ) : null}
         </div>
     );
 }

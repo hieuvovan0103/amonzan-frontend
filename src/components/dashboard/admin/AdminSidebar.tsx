@@ -1,7 +1,6 @@
 "use client";
 
 import {
-    Box,
     LayoutDashboard,
     Menu,
     MessageSquareWarning,
@@ -10,6 +9,7 @@ import {
     ShieldAlert,
     ShoppingBag,
     Store,
+    TicketPercent,
     Users,
     Wallet,
 } from "lucide-react";
@@ -104,13 +104,6 @@ export default function AdminSidebar({
                     onClick={() => setActiveTab("vendor_verification")}
                     collapsed={!isSidebarOpen}
                 />
-                <AdminNavItem
-                    icon={Box}
-                    label="Tồn kho"
-                    active={activeTab === "inventory"}
-                    onClick={() => setActiveTab("inventory")}
-                    collapsed={!isSidebarOpen}
-                />
 
                 <div className="pt-6 pb-2 px-3 text-[10px] font-black text-[#6B7280] uppercase tracking-widest">
                     {isSidebarOpen ? "Tài chính & Rủi ro" : "---"}
@@ -121,6 +114,13 @@ export default function AdminSidebar({
                     label="Ví & Escrow"
                     active={activeTab === "payments"}
                     onClick={() => setActiveTab("payments")}
+                    collapsed={!isSidebarOpen}
+                />
+                <AdminNavItem
+                    icon={TicketPercent}
+                    label="Voucher"
+                    active={activeTab === "vouchers"}
+                    onClick={() => setActiveTab("vouchers")}
                     collapsed={!isSidebarOpen}
                 />
                 <AdminNavItem

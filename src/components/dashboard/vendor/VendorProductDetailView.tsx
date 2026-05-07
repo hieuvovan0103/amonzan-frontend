@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Edit2, Loader2, Save, Send, Trash2 } from "lucide-react";
+import { ChevronLeft, Edit2, Flag, Loader2, MessageSquareReply, Save, Send, Trash2 } from "lucide-react";
 import { getPublicCategories } from "@/lib/api/categories";
 import type { ProductCategory } from "@/lib/api/categories";
 import { ApiProduct } from "@/types/vendor";
@@ -10,13 +10,19 @@ import {
   updateVendorProduct,
   updateVendorProductStatus,
 } from "@/lib/api/vendor";
+import { replyToReview, reportReview } from "@/lib/api/reviews";
+import ReportFormModal, { type ReportFormValues } from "@/components/reports/ReportFormModal";
 import { useToastStore } from "@/stores/useToastStore";
 
 type VendorProductDetailViewProps = {
   product: ApiProduct;
   onBack: () => void;
-  onUpdate: () => void;
+  onUpdate: () => void | Promise<void>;
 };
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 const statusLabels: Record<ApiProduct["status"], string> = {
   DRAFT: "Bản nháp",
@@ -34,6 +40,10 @@ export default function VendorProductDetailView({
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [savingReplyId, setSavingReplyId] = useState<string | null>(null);
+  const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
+  const [isReportingReview, setIsReportingReview] = useState(false);
   const [form, setForm] = useState({
     name: product.name,
     description: product.description ?? "",
@@ -51,17 +61,25 @@ export default function VendorProductDetailView({
   const isLocked = product.status === "PENDING_REVIEW";
 
   useEffect(() => {
-    setForm({
-      name: product.name,
-      description: product.description ?? "",
-      category_id: product.category_id ?? "",
-    });
+    const timer = window.setTimeout(() => {
+      setForm({
+        name: product.name,
+        description: product.description ?? "",
+        category_id: product.category_id ?? "",
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [product]);
 
   useEffect(() => {
-    getPublicCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
+    const timer = window.setTimeout(() => {
+      getPublicCategories()
+        .then(setCategories)
+        .catch(() => setCategories([]));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleArchive = async () => {
@@ -73,8 +91,8 @@ export default function VendorProductDetailView({
       showToast("Đã lưu trữ sản phẩm.", "success");
       onUpdate();
       onBack();
-    } catch (error: any) {
-      showToast(error.message || "Không thể lưu trữ sản phẩm.", "error");
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, "Không thể lưu trữ sản phẩm."), "error");
     } finally {
       setIsSaving(false);
     }
@@ -86,8 +104,8 @@ export default function VendorProductDetailView({
       await submitVendorProductForReview(product.product_id);
       showToast("Đã gửi sản phẩm cho admin duyệt.", "success");
       onUpdate();
-    } catch (error: any) {
-      showToast(error.message || "Không thể gửi duyệt sản phẩm.", "error");
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, "Không thể gửi duyệt sản phẩm."), "error");
     } finally {
       setIsSaving(false);
     }
@@ -109,10 +127,55 @@ export default function VendorProductDetailView({
       showToast("Đã lưu chỉnh sửa sản phẩm.", "success");
       setIsEditing(false);
       onUpdate();
-    } catch (error: any) {
-      showToast(error.message || "Không thể lưu sản phẩm.", "error");
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, "Không thể lưu sản phẩm."), "error");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveReply = async (reviewId: string) => {
+    const existingReply = product.reviews?.find((review) => review.review_id === reviewId)?.shop_reply;
+    const content = (replyDrafts[reviewId] ?? existingReply?.content ?? "").trim();
+    if (!content) {
+      showToast("Vui lòng nhập nội dung phản hồi.", "error");
+      return;
+    }
+
+    setSavingReplyId(reviewId);
+    try {
+      await replyToReview(reviewId, content);
+      showToast("Đã lưu phản hồi đánh giá.", "success");
+      await onUpdate();
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, "Không thể phản hồi đánh giá."), "error");
+    } finally {
+      setSavingReplyId(null);
+    }
+  };
+
+  const handleReportReview = async (values: ReportFormValues) => {
+    if (!reportingReviewId) return;
+
+    const reportReason = [
+      `Loại: ${values.category}`,
+      `Lý do: ${values.reason}`,
+      values.detail ? `Chi tiết: ${values.detail}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    setIsReportingReview(true);
+    try {
+      await reportReview(reportingReviewId, reportReason);
+      showToast("Đã gửi báo cáo đánh giá cho admin.", "success");
+      setReportingReviewId(null);
+      await onUpdate();
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, "Không thể báo cáo đánh giá."), "error");
+      throw error;
+    } finally {
+      setIsReportingReview(false);
     }
   };
 
@@ -289,8 +352,138 @@ export default function VendorProductDetailView({
               </tbody>
             </table>
           </div>
+
+          <div className="mt-6 rounded-[16px] border border-[#E6E6E6] bg-white p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-[16px] font-bold text-[#222222]">Đánh giá sản phẩm</h2>
+              <span className="text-[13px] font-semibold text-[#565959]">
+                {(product.reviews?.length ?? 0)} đánh giá
+              </span>
+            </div>
+
+            {(product.reviews?.length ?? 0) === 0 ? (
+              <div className="rounded-[12px] border border-dashed border-[#D5D9D9] bg-[#F7F7F7] px-4 py-6 text-center text-[14px] text-[#565959]">
+                Chưa có đánh giá nào cho sản phẩm này.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(product.reviews ?? []).map((review) => (
+                  <div key={review.review_id} className="rounded-[12px] border border-[#E6E6E6] p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 overflow-hidden rounded-full border border-[#E6E6E6] bg-[#F7F7F7]">
+                          <img
+                            src={review.reviewer_avatar_url ?? "/file.svg"}
+                            alt={review.reviewer_name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="text-[14px] font-bold text-[#222222]">{review.reviewer_name}</div>
+                          <div className="mt-0.5 text-[12px] text-[#565959]">
+                            {new Intl.DateTimeFormat("vi-VN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }).format(new Date(review.created_at))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-bold text-[#B12704]">{review.rating}/5</span>
+                        <div className="text-[#FFA41C] text-[14px]">
+                          {"★".repeat(Math.max(0, Math.min(5, Math.round(review.rating))))}
+                          <span className="text-[#D5D9D9]">
+                            {"★".repeat(Math.max(0, 5 - Math.round(review.rating)))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {review.comment ? (
+                      <div className="mt-3 whitespace-pre-wrap text-[14px] leading-6 text-[#222222]">
+                        {review.comment}
+                      </div>
+                    ) : (
+                      <div className="mt-3 text-[13px] text-[#565959]">Không có nhận xét.</div>
+                    )}
+
+                    {review.is_hidden ? (
+                      <div className="mt-3 rounded-[6px] border border-[#F5C2C7] bg-[#FFF5F5] px-3 py-2 text-[12px] font-semibold text-[#842029]">
+                        Đánh giá này đã bị admin ẩn.
+                      </div>
+                    ) : null}
+
+                    {review.shop_reply ? (
+                      <div className="mt-3 rounded-[8px] border border-[#D5D9D9] bg-[#F7F7F7] px-3 py-2 text-[13px]">
+                        <div className="font-bold text-[#222222]">
+                          Phản hồi của shop
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap leading-6 text-[#565959]">
+                          {review.shop_reply.content}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 rounded-[8px] border border-[#E6E6E6] bg-[#FAFAFA] p-3">
+                      <label className="mb-2 block text-[13px] font-bold text-[#222222]">
+                        {review.shop_reply ? "Cập nhật phản hồi" : "Phản hồi đánh giá"}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={replyDrafts[review.review_id] ?? review.shop_reply?.content ?? ""}
+                        onChange={(event) =>
+                          setReplyDrafts((current) => ({
+                            ...current,
+                            [review.review_id]: event.target.value,
+                          }))
+                        }
+                        disabled={review.is_hidden}
+                        placeholder="Nhập phản hồi chính thức của shop..."
+                        className="w-full rounded-[6px] border border-[#D5D9D9] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#FF9900] disabled:cursor-not-allowed disabled:bg-[#F7F7F7]"
+                      />
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveReply(review.review_id)}
+                          disabled={savingReplyId === review.review_id || review.is_hidden}
+                          className="inline-flex items-center justify-center gap-2 rounded-[6px] border border-[#F0C14B] bg-[#FFD814] px-4 py-2 text-[13px] font-bold text-[#111111] hover:bg-[#F0C14B] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {savingReplyId === review.review_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MessageSquareReply className="h-4 w-4" />
+                          )}
+                          Lưu phản hồi
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setReportingReviewId(review.review_id)}
+                          disabled={isReportingReview || review.report_status === "PENDING"}
+                          className="inline-flex items-center justify-center gap-2 rounded-[6px] border border-[#F5C2C7] bg-white px-4 py-2 text-[13px] font-bold text-[#842029] hover:bg-[#FFF5F5] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Flag className="h-4 w-4" />
+                          {review.report_status === "PENDING" ? "Đã báo cáo" : "Báo cáo đánh giá"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      {reportingReviewId ? (
+        <ReportFormModal
+          title="Báo cáo đánh giá sản phẩm"
+          subjectLabel={`Review #${reportingReviewId.slice(0, 8)}`}
+          onClose={() => setReportingReviewId(null)}
+          onSubmit={handleReportReview}
+        />
+      ) : null}
     </div>
   );
 }

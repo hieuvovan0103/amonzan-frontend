@@ -7,6 +7,17 @@ export type ProductReview = {
   createdAt: string;
   reviewerName: string;
   reviewerAvatarUrl?: string | null;
+  shopReply?: ReviewReply | null;
+};
+
+export type ReviewReply = {
+  replyId: string;
+  reviewId: string;
+  shopId: string;
+  shopName: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ProductReviewSummary = {
@@ -46,6 +57,7 @@ export type AdminReview = {
     slug: string;
     shop_name: string | null;
   } | null;
+  shop_reply?: ReviewReplyApi | null;
 };
 
 type ReviewApi = {
@@ -55,6 +67,17 @@ type ReviewApi = {
   created_at: string;
   reviewer_name?: string | null;
   reviewer_avatar_url?: string | null;
+  shop_reply?: ReviewReplyApi | null;
+};
+
+type ReviewReplyApi = {
+  reply_id: string;
+  review_id: string;
+  shop_id: string;
+  shop_name?: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
 };
 
 type ReviewsResponseApi = {
@@ -73,6 +96,21 @@ function mapReview(review: ReviewApi): ProductReview {
     createdAt: review.created_at,
     reviewerName: review.reviewer_name || "Người thuê Amonzan",
     reviewerAvatarUrl: review.reviewer_avatar_url ?? null,
+    shopReply: mapReply(review.shop_reply),
+  };
+}
+
+function mapReply(reply?: ReviewReplyApi | null): ReviewReply | null {
+  if (!reply) return null;
+
+  return {
+    replyId: reply.reply_id,
+    reviewId: reply.review_id,
+    shopId: reply.shop_id,
+    shopName: reply.shop_name || "Shop Amonzan",
+    content: reply.content,
+    createdAt: reply.created_at,
+    updatedAt: reply.updated_at,
   };
 }
 
@@ -198,4 +236,18 @@ export async function reportReview(reviewId: string, reason: string) {
   }
 
   return response.json();
+}
+
+export async function replyToReview(reviewId: string, content: string) {
+  const response = await fetchWithAuth(`/reviews/${reviewId}/reply`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể phản hồi đánh giá.");
+  }
+
+  return mapReply((await response.json()) as ReviewReplyApi);
 }

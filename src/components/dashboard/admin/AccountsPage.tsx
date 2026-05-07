@@ -7,6 +7,7 @@ import {
     type AdminAccount,
     updateAdminAccountRoles,
 } from "@/lib/api/adminAccounts";
+import SimplePagination from "@/components/ui/SimplePagination";
 
 function formatDate(value: string) {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -38,6 +39,8 @@ export default function AccountsPage() {
     const [keyword, setKeyword] = useState("");
     const [roleFilter, setRoleFilter] = useState("ALL");
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const pageSize = 20;
 
     const loadAccounts = async () => {
         setIsLoading(true);
@@ -78,6 +81,17 @@ export default function AccountsPage() {
                 .some((value) => String(value).toLowerCase().includes(normalizedKeyword));
         });
     }, [accounts, keyword, roleFilter]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setPage(1);
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [keyword, roleFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / pageSize));
+    const pageItems = filteredAccounts.slice((page - 1) * pageSize, page * pageSize);
 
     const handleToggleRole = async (account: AdminAccount, role: "RENTER" | "SHOP_OWNER") => {
         if (account.isAdmin) return;
@@ -162,7 +176,7 @@ export default function AccountsPage() {
                     </thead>
 
                     <tbody>
-                        {filteredAccounts.map((account) => (
+                        {pageItems.map((account) => (
                             <tr
                                 key={account.userId}
                                 className="border-b border-[#E6E6E6] hover:bg-[#F9FAFB] transition-colors"
@@ -251,6 +265,14 @@ export default function AccountsPage() {
                     </tbody>
                 </table>
             </div>
+            ) : null}
+
+            {!isLoading ? (
+                <SimplePagination
+                    page={Math.min(page, totalPages)}
+                    totalPages={totalPages}
+                    onPageChange={(next) => setPage(Math.min(Math.max(1, next), totalPages))}
+                />
             ) : null}
         </div>
     );

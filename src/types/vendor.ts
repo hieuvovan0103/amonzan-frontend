@@ -44,6 +44,28 @@ export interface ApiVariant {
   available_stock: number;
 }
 
+export interface ApiProductReview {
+  review_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  is_hidden?: boolean;
+  reported_at?: string | null;
+  report_status?: string | null;
+  report_reason?: string | null;
+  reviewer_name: string;
+  reviewer_avatar_url: string | null;
+  shop_reply?: {
+    reply_id: string;
+    review_id: string;
+    shop_id: string;
+    shop_name: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+  } | null;
+}
+
 export interface ApiProduct {
   product_id: string;
   shop_id: string;
@@ -58,6 +80,7 @@ export interface ApiProduct {
   categories: ApiCategory | null;
   product_images: ApiImage[];
   product_variants: ApiVariant[];
+  reviews?: ApiProductReview[];
 }
 
 export type VendorOrder = {
@@ -183,9 +206,11 @@ export type VendorCalendarEvent = {
 };
 
 export type VendorTab =
+  | "vendor_overview"
   | "vendor_listings"
   | "vendor_detail"
   | "vendor_orders"
   | "vendor_returns"
+  | "vendor_vouchers"
   | "rentals_calendar"
   | "shop_settings";

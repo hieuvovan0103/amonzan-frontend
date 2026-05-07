@@ -4,23 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, LogOut, Search, Settings, Store, UserCircle } from "lucide-react";
 import VendorSidebar from "@/components/dashboard/vendor/VendorSidebar";
+import VendorOverviewView from "@/components/dashboard/vendor/VendorOverviewView";
 import VendorListingsView from "@/components/dashboard/vendor/VendorListingsView";
 import VendorProductDetailView from "@/components/dashboard/vendor/VendorProductDetailView";
 import VendorRentalsCalendarView from "@/components/dashboard/vendor/VendorRentalsCalendarView";
 import VendorShopSettingsView from "@/components/dashboard/vendor/VendorShopSettingsView";
 import VendorOrdersView from "@/components/dashboard/vendor/VendorOrdersView";
+import VendorVouchersView from "@/components/dashboard/vendor/VendorVouchersView";
 import ReturnRequestList from "@/components/returns/ReturnRequestList";
 import { ApiProduct, VendorTab } from "@/types/vendor";
-import { getVendorProducts } from "@/lib/api/vendor";
+import { getVendorProductDetail, getVendorProducts } from "@/lib/api/vendor";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useCallback } from "react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
 const TAB_LABELS: Record<VendorTab, string> = {
+    vendor_overview: "Tổng quan",
     vendor_listings: "Danh sách sản phẩm",
     vendor_detail: "Chi tiết sản phẩm",
     vendor_orders: "Duyệt đơn thuê",
     vendor_returns: "Yêu cầu hoàn trả",
+    vendor_vouchers: "Voucher",
     rentals_calendar: "Lịch cho thuê",
     shop_settings: "Cài đặt cửa hàng",
 };
@@ -28,10 +32,12 @@ const TAB_LABELS: Record<VendorTab, string> = {
 const VENDOR_TAB_STORAGE_KEY = "amonzan-vendor-active-tab";
 const VENDOR_PRODUCT_STORAGE_KEY = "amonzan-vendor-selected-product-id";
 const vendorTabs: VendorTab[] = [
+    "vendor_overview",
     "vendor_listings",
     "vendor_detail",
     "vendor_orders",
     "vendor_returns",
+    "vendor_vouchers",
     "rentals_calendar",
     "shop_settings",
 ];
@@ -42,7 +48,7 @@ function isVendorTab(value: string | null): value is VendorTab {
 
 function getInitialVendorTab(): VendorTab {
     if (typeof window === "undefined") {
-        return "vendor_listings";
+        return "vendor_overview";
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -60,7 +66,7 @@ function getInitialVendorTab(): VendorTab {
         return storedTab;
     }
 
-    return "vendor_listings";
+    return "vendor_overview";
 }
 
 function persistVendorState(tab: VendorTab, productId?: string | null) {
@@ -124,7 +130,9 @@ export default function VendorDashboardShell() {
             setProducts(data);
             setSelectedProduct((current) =>
                 current
-                    ? data.find((product) => product.product_id === current.product_id) ?? current
+                    ? activeTab === "vendor_detail"
+                        ? current
+                        : data.find((product) => product.product_id === current.product_id) ?? current
                     : getRestoredSelectedProduct(data),
             );
         } catch (err: unknown) {
@@ -132,7 +140,7 @@ export default function VendorDashboardShell() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [activeTab]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -183,6 +191,24 @@ export default function VendorDashboardShell() {
         return () => window.clearTimeout(timer);
     }, [activeTab, products, selectedProduct]);
 
+    useEffect(() => {
+        if (activeTab !== "vendor_detail") return;
+        if (!selectedProduct?.product_id) return;
+
+        let isCancelled = false;
+        void getVendorProductDetail(selectedProduct.product_id)
+            .then((detail) => {
+                if (!isCancelled) setSelectedProduct(detail);
+            })
+            .catch(() => {
+                // Keep current state if fetch fails.
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [activeTab, selectedProduct?.product_id]);
+
     const setActiveTab = (tab: VendorTab) => {
         if (tab !== "vendor_detail") {
             setSelectedProduct(null);
@@ -193,12 +219,35 @@ export default function VendorDashboardShell() {
     const handleSelectProduct = (product: ApiProduct) => {
         setSelectedProduct(product);
         setActiveTabState("vendor_detail");
+
+        // Load fresh detail (includes reviews, inventory, etc.).
+        void getVendorProductDetail(product.product_id)
+            .then((detail) => {
+                setSelectedProduct(detail);
+            })
+            .catch(() => {
+                // Keep existing snapshot if fetch fails.
+            });
     };
 
     const handleBackToList = () => {
         setSelectedProduct(null);
         setActiveTabState("vendor_listings");
     };
+
+    const selectedProductId = selectedProduct?.product_id;
+
+    const refreshSelectedProduct = useCallback(async () => {
+        if (selectedProductId) {
+            try {
+                setSelectedProduct(await getVendorProductDetail(selectedProductId));
+            } catch {
+                // Keep current detail if refresh fails.
+            }
+        }
+
+        await fetchProducts();
+    }, [fetchProducts, selectedProductId]);
 
     return (
         <div className="min-h-screen bg-[#F4F6F8]">
@@ -336,11 +385,21 @@ export default function VendorDashboardShell() {
                             />
                         )}
 
+                        {activeTab === "vendor_overview" && (
+                            <VendorOverviewView
+                                products={products}
+                                isLoadingProducts={isLoading}
+                                productError={error}
+                                onNavigate={setActiveTab}
+                                onRefreshProducts={fetchProducts}
+                            />
+                        )}
+
                         {activeTab === "vendor_detail" && selectedProduct && (
                             <VendorProductDetailView
                                 product={selectedProduct}
                                 onBack={handleBackToList}
-                                onUpdate={fetchProducts}
+                                onUpdate={refreshSelectedProduct}
                             />
                         )}
 
@@ -354,6 +413,10 @@ export default function VendorDashboardShell() {
 
                         {activeTab === "vendor_returns" && (
                             <ReturnRequestList />
+                        )}
+
+                        {activeTab === "vendor_vouchers" && (
+                            <VendorVouchersView />
                         )}
 
                         {activeTab === "shop_settings" && (

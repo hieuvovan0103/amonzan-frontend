@@ -50,8 +50,9 @@ export default function ProductInfo({
     const displayedPrice = rentalDays > 0
         ? formatPrice(selectedPriceValue * rentalDays)
         : formatPrice(selectedPriceValue);
+    const hasRentalDates = Boolean(rentalStart && rentalEnd);
     const getDisplayedStock = (size: ProductSizeOption) => {
-        if (selectedSize?.variantId === size.variantId && availability) {
+        if (hasRentalDates && selectedSize?.variantId === size.variantId && availability) {
             return availability.availableStock;
         }
 
@@ -123,7 +124,7 @@ export default function ProductInfo({
                             >
                                 {size.name}
                                 <span className="ml-1 text-[11px] text-[#565959]">
-                                    ({getDisplayedStock(size)})
+                                    {hasRentalDates ? `(${getDisplayedStock(size)})` : `(tồn: ${size.availableStock})`}
                                 </span>
                             </button>
                         ))}

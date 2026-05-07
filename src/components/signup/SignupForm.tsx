@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle, ChevronRight, ShieldCheck } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import PhoneOtpDialog from "@/components/signup/PhoneOtpDialog";
-import { BASE_URL, fetchWithAuth } from "@/lib/apiClient";
+import { fetchWithAuth } from "@/lib/apiClient";
 import { normalizePhoneNumber } from "@/lib/phone";
-import { supabase } from "@/lib/supabase";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { setAuthStorageMode, supabase } from "@/lib/supabase";
 
 function mapSignupError(message?: string) {
   if (!message) {
@@ -42,7 +41,6 @@ function mapSignupError(message?: string) {
 }
 
 export default function SignupForm() {
-  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [identifier, setIdentifier] = useState(""); // Email or Phone
   const [password, setPassword] = useState("");
   
@@ -63,8 +61,8 @@ export default function SignupForm() {
               }
           });
           if (error) throw error;
-      } catch (err: any) {
-          setSubmitError(err.message || "Không thể đăng nhập bằng Google.");
+      } catch (err: unknown) {
+          setSubmitError(err instanceof Error ? err.message : "Không thể đăng nhập bằng Google.");
       }
   };
 
@@ -73,6 +71,8 @@ export default function SignupForm() {
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
+
+    setAuthStorageMode("local");
 
     const normalizedIdentifier = identifier.trim();
 

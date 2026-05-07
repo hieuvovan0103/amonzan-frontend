@@ -83,7 +83,18 @@ type PublicProductDetailApi = {
     created_at: string;
     reviewer_name?: string | null;
     reviewer_avatar_url?: string | null;
+    shop_reply?: ProductReviewReplyApi | null;
   }>;
+};
+
+type ProductReviewReplyApi = {
+  reply_id: string;
+  review_id: string;
+  shop_id: string;
+  shop_name?: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ProductListResult = {
@@ -105,6 +116,15 @@ export type ProductReview = {
   createdAt: string;
   reviewerName: string;
   reviewerAvatarUrl?: string | null;
+  shopReply?: {
+    replyId: string;
+    reviewId: string;
+    shopId: string;
+    shopName: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 };
 
 export type ProductDetail = {
@@ -272,6 +292,17 @@ export async function getPublicProductDetail(
     createdAt: review.created_at,
     reviewerName: review.reviewer_name || "Người thuê Amonzan",
     reviewerAvatarUrl: review.reviewer_avatar_url ?? null,
+    shopReply: review.shop_reply
+      ? {
+          replyId: review.shop_reply.reply_id,
+          reviewId: review.shop_reply.review_id,
+          shopId: review.shop_reply.shop_id,
+          shopName: review.shop_reply.shop_name || "Shop Amonzan",
+          content: review.shop_reply.content,
+          createdAt: review.shop_reply.created_at,
+          updatedAt: review.shop_reply.updated_at,
+        }
+      : null,
   }));
   const ratingDistribution = reviews.reduce<Record<1 | 2 | 3 | 4 | 5, number>>(
     (acc, review) => {

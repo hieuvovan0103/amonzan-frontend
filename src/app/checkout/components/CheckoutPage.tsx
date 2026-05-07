@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getProfileAddresses, type ProfileAddress } from "@/lib/api/profile";
 import { fetchWithAuth } from "@/lib/apiClient";
 import { getCartStockIssues, type CartStockIssue } from "@/lib/cart-stock";
+import { validateVoucher } from "@/lib/api/vouchers";
 import { useCartStore } from "@/stores/useCartStore";
 import type { CartItem } from "@/types/cart";
 import CheckoutAddressSection from "./CheckoutAddressSection";
@@ -79,6 +80,10 @@ function removePendingPayment() {
     window.localStorage.removeItem(PENDING_PAYMENT_KEY);
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
+}
+
 function readCartItemsFromStorage() {
     if (typeof window === "undefined") return null;
 
@@ -110,7 +115,9 @@ export default function CheckoutPage() {
     const items = useCartStore((state) => state.items);
     const hasHydratedCart = useCartStore((state) => state.hasHydrated);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
-    const effectiveItems = items.length > 0 ? items : storageCartItems ?? [];
+    const effectiveItems = useMemo(() => {
+        return items.length > 0 ? items : storageCartItems ?? [];
+    }, [items, storageCartItems]);
 
     const selectedItems = useMemo(() => {
         return effectiveItems.filter((item) => item.selected);
@@ -132,8 +139,12 @@ export default function CheckoutPage() {
         : "";
 
     useEffect(() => {
-        setPendingPayment(readPendingPayment());
-        setStorageCartItems(readCartItemsFromStorage());
+        const timer = window.setTimeout(() => {
+            setPendingPayment(readPendingPayment());
+            setStorageCartItems(readCartItemsFromStorage());
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, []);
 
     useEffect(() => {
@@ -235,7 +246,7 @@ export default function CheckoutPage() {
         };
     }, []);
 
-    const handleApplyVoucher = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleApplyVoucher = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         const code = voucherCode.trim().toUpperCase();
@@ -246,22 +257,30 @@ export default function CheckoutPage() {
             return;
         }
 
-        if (code === "AMONZAN50") {
-            setDiscount(Math.min(50000, totalRentFee));
-            setVoucherMessage("Áp dụng mã giảm giá thành công.");
-            return;
-        }
+        try {
+            const shopId = selectedItems[0]?.shopId;
+            const result = await validateVoucher({
+                code,
+                subtotal: totalRentFee,
+                shopId,
+            });
 
-        setDiscount(0);
-        setVoucherMessage("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
+            setDiscount(result.valid ? result.discountAmount : 0);
+            setVoucherMessage(result.message);
+        } catch (error: unknown) {
+            setDiscount(0);
+            setVoucherMessage(getErrorMessage(error, "Không thể kiểm tra mã giảm giá."));
+        }
     };
 
     const handleUpdateQuantity = (id: string, quantity: number) => {
         const currentItem = effectiveItems.find((item) => item.id === id);
-        const maxQuantity = currentItem?.availableStock && currentItem.availableStock > 0
-            ? currentItem.availableStock
-            : undefined;
-        const nextQuantity = Math.min(Math.max(1, quantity), maxQuantity ?? Math.max(1, quantity));
+        const maxQuantity =
+            typeof currentItem?.availableStock === "number"
+                ? currentItem.availableStock
+                : undefined;
+        const upperBound = maxQuantity === undefined ? Math.max(1, quantity) : maxQuantity;
+        const nextQuantity = Math.min(Math.max(1, quantity), upperBound);
         updateQuantity(id, nextQuantity);
         setStorageCartItems((currentItems) =>
             currentItems
@@ -374,10 +393,11 @@ export default function CheckoutPage() {
             });
 
             window.location.href = payment.paymentUrl;
-        } catch (error: any) {
-            const message =
-                error?.message ||
-                "Không thể kết nối tới hệ thống đặt thuê. Vui lòng thử lại.";
+        } catch (error: unknown) {
+            const message = getErrorMessage(
+                error,
+                "Không thể kết nối tới hệ thống đặt thuê. Vui lòng thử lại.",
+            );
             console.warn("[checkout] place order failed", { message });
             router.push(buildFailureUrl(message));
         } finally {

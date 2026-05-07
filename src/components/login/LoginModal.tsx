@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle, X } from "lucide-react";
 import { useAuthModal } from "@/stores/useAuthModal";
-import { supabase } from "@/lib/supabase";
+import { setAuthStorageMode, supabase } from "@/lib/supabase";
 import { normalizePhoneNumber } from "@/lib/phone";
-import PhoneOtpDialog from "@/components/signup/PhoneOtpDialog";
 
 export default function LoginModal() {
   const { isLoginOpen, closeLogin } = useAuthModal();
 
-  const [visible, setVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [loginId, setLoginId] = useState("");
@@ -23,20 +21,15 @@ export default function LoginModal() {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    if (isLoginOpen) {
-      setVisible(true);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setVisible(false);
+    const timeout = window.setTimeout(() => {
+      if (isLoginOpen) return;
       setPassword("");
       setError("");
       setSuccess("");
       setShowPassword(false);
     }, 200);
 
-    return () => clearTimeout(timeout);
+    return () => window.clearTimeout(timeout);
   }, [isLoginOpen]);
 
   const handleGoogleLogin = async () => {
@@ -44,7 +37,7 @@ export default function LoginModal() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/products`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -71,6 +64,8 @@ export default function LoginModal() {
     setError("");
     setSuccess("");
 
+    setAuthStorageMode(rememberMe ? "local" : "session");
+
     let credentials;
     const isEmail = loginId.includes("@");
 
@@ -86,39 +81,18 @@ export default function LoginModal() {
         credentials = { phone: normalizedPhoneNumber, password };
     }
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword(credentials);
+    const { error: authError } = await supabase.auth.signInWithPassword(credentials);
 
     if (authError) {
-      // Kiểm tra tài khoản có tồn tại không
-      let userExists = false;
-      try {
-          if (isEmail) {
-              const { data: profile } = await supabase
-                  .from('user_profiles')
-                  .select('email')
-                  .eq('email', loginId)
-                  .maybeSingle();
-              if (profile) userExists = true;
-          } else {
-              const normalizedPhone = credentials.phone;
-              const { data: profile } = await supabase
-                  .from('user_profiles')
-                  .select('phone_number')
-                  .eq('phone_number', normalizedPhone)
-                  .maybeSingle();
-              if (profile) userExists = true;
-          }
-      } catch (err) {
-          console.error("Lỗi khi kiểm tra user_profiles:", err);
-      }
-
-      if (!userExists) {
-          setError("Tài khoản không tồn tại.");
-          setIsLoading(false);
+      const msg = authError.message?.toLowerCase?.() ?? "";
+      if (msg.includes("invalid login credentials")) {
+        setError("Email/SĐT hoặc mật khẩu không đúng.");
+      } else if (msg.includes("email") && msg.includes("not confirmed")) {
+        setError("Email chưa được xác nhận. Vui lòng kiểm tra hộp thư để xác nhận tài khoản.");
       } else {
-          setError("Mật khẩu không đúng.");
-          setIsLoading(false);
+        setError(authError.message || "Đăng nhập thất bại.");
       }
+      setIsLoading(false);
     } else {
       // Thành công
       window.location.reload();

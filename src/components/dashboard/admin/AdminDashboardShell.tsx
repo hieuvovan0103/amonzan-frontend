@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminOrder, AdminTab } from "@/types/admin";
+import { AdminTab } from "@/types/admin";
 import AdminSidebar from "@/components/dashboard/admin/AdminSidebar";
 import AdminTopbar from "@/components/dashboard/admin/AdminTopbar";
 import OverviewPage from "@/components/dashboard/admin/OverviewPage";
@@ -11,9 +11,9 @@ import ProductsPage from "@/components/dashboard/admin/ProductsPage";
 import CategoriesPage from "@/components/dashboard/admin/CategoriesPage";
 import ReviewsPage from "@/components/dashboard/admin/ReviewsPage";
 import VendorVerificationSection from "@/components/dashboard/admin/vendor-verification/VendorVerificationSection";
-import InventoryPage from "@/components/dashboard/admin/InventoryPage";
 import PaymentsPage from "@/components/dashboard/admin/PaymentsPage";
 import DisputesPage from "@/components/dashboard/admin/DisputesPage";
+import VouchersPage from "@/components/dashboard/admin/VouchersPage";
 import OrderDetailDrawer from "@/components/dashboard/admin/OrderDetailDrawer";
 
 const ADMIN_TAB_STORAGE_KEY = "amonzan-admin-active-tab";
@@ -25,8 +25,8 @@ const adminTabs: AdminTab[] = [
     "categories",
     "reviews",
     "vendor_verification",
-    "inventory",
     "payments",
+    "vouchers",
     "disputes",
 ];
 
@@ -68,14 +68,10 @@ function persistAdminTab(tab: AdminTab) {
 }
 
 export default function AdminDashboardShell() {
-    const [activeTab, setActiveTabState] = useState<AdminTab>("overview");
+    const [activeTab, setActiveTabState] = useState<AdminTab>(() => getInitialAdminTab());
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
-
-    useEffect(() => {
-        setActiveTabState(getInitialAdminTab());
-    }, []);
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
     useEffect(() => {
         persistAdminTab(activeTab);
@@ -125,7 +121,7 @@ export default function AdminDashboardShell() {
                     {activeTab === "overview" && <OverviewPage />}
                     {activeTab === "accounts" && <AccountsPage />}
                     {activeTab === "orders" && (
-                        <OrdersPage onSelectOrder={setSelectedOrder} />
+                        <OrdersPage onSelectOrder={(order) => setSelectedOrderId(order.id)} />
                     )}
                     {activeTab === "products" && <ProductsPage />}
                     {activeTab === "categories" && <CategoriesPage />}
@@ -135,15 +131,15 @@ export default function AdminDashboardShell() {
                             <VendorVerificationSection />
                         </div>
                     )}
-                    {activeTab === "inventory" && <InventoryPage />}
                     {activeTab === "payments" && <PaymentsPage />}
+                    {activeTab === "vouchers" && <VouchersPage />}
                     {activeTab === "disputes" && <DisputesPage />}
                 </main>
             </div>
 
             <OrderDetailDrawer
-                order={selectedOrder}
-                onClose={() => setSelectedOrder(null)}
+                orderId={selectedOrderId}
+                onClose={() => setSelectedOrderId(null)}
             />
         </div>
     );

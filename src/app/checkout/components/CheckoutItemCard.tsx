@@ -21,7 +21,7 @@ export default function CheckoutItemCard({
     const rentalDays = getRentalDays(item);
     const totalRent = getItemRentTotal(item);
     const maxQuantity = stockIssue?.availableStock ?? item.availableStock;
-    const canIncrease = !maxQuantity || item.quantity < maxQuantity;
+    const canIncrease = maxQuantity === undefined || item.quantity < maxQuantity;
 
     return (
         <article className="flex flex-col gap-4 p-4 sm:flex-row">

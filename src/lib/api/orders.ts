@@ -30,6 +30,14 @@ export type PaidOrder = {
     createdAt: string;
     confirmedAt: string | null;
     completedAt: string | null;
+    dispute: {
+        disputeId: string;
+        status: string;
+        reason: string | null;
+        resolution: string | null;
+        openedAt: string | null;
+        resolvedAt: string | null;
+    } | null;
     earlyReturnRequest: EarlyReturnRequest | null;
     returnRecord: ReturnRecord | null;
     renterReview: {

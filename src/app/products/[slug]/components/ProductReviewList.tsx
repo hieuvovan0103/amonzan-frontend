@@ -82,6 +82,14 @@ export default function ProductReviewList({ reviews }: ProductReviewListProps) {
                             Người thuê không để lại nhận xét.
                         </p>
                     )}
+                    {review.shopReply ? (
+                        <div className="mt-3 rounded-[6px] border border-[#D5D9D9] bg-[#F7F7F7] px-3 py-2 text-[13px]">
+                            <div className="font-bold text-[#222222]">Phản hồi từ {review.shopReply.shopName}</div>
+                            <p className="mt-1 whitespace-pre-wrap leading-6 text-[#565959]">
+                                {review.shopReply.content}
+                            </p>
+                        </div>
+                    ) : null}
                     <button
                         type="button"
                         onClick={() => setReportingReview(review)}

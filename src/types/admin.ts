@@ -6,8 +6,8 @@ export type AdminTab =
     | "categories"
     | "reviews"
     | "vendor_verification"
-    | "inventory"
     | "payments"
+    | "vouchers"
     | "disputes";
 
 export type AdminOrderStatus =
