@@ -1,8 +1,11 @@
-import { ChevronDown, Plus, Search, Loader2, PackageOpen, AlertCircle } from "lucide-react";
-import { useState } from "react";
+"use client";
+
+import { useMemo, useState } from "react";
+import { AlertCircle, ChevronDown, Loader2, PackageOpen, Plus, Search } from "lucide-react";
 import VendorProductCard from "@/components/dashboard/vendor/VendorProductCard";
 import AddProductModal from "@/components/dashboard/vendor/AddProductModal";
-import { ApiProduct } from "@/types/vendor";
+import type { ApiProduct, VendorProductStatus } from "@/types/vendor";
+import { useVendorProductFormStore } from "@/stores/vendorProductFormStore";
 
 type VendorListingsViewProps = {
     products: ApiProduct[];
@@ -19,7 +22,35 @@ export default function VendorListingsView({
     onSelectProduct,
     onRefresh,
 }: VendorListingsViewProps) {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"ALL" | VendorProductStatus>("ALL");
+    const isAddModalOpen = useVendorProductFormStore((state) => state.isModalOpen);
+    const openProductForm = useVendorProductFormStore((state) => state.openModal);
+    const closeProductForm = useVendorProductFormStore((state) => state.closeModal);
+
+    const filteredProducts = useMemo(() => {
+        const keyword = searchTerm.trim().toLowerCase();
+
+        return products.filter((product) => {
+            if (statusFilter !== "ALL" && product.status !== statusFilter) {
+                return false;
+            }
+
+            if (!keyword) return true;
+
+            return [
+                product.name,
+                product.slug,
+                product.categories?.name,
+                product.description,
+                product.product_id,
+            ]
+                .filter(Boolean)
+                .some((value) => value!.toLowerCase().includes(keyword));
+        });
+    }, [products, searchTerm, statusFilter]);
+
+    const hasActiveFilters = Boolean(searchTerm.trim()) || statusFilter !== "ALL";
 
     return (
         <div className="flex-1 animate-in fade-in duration-300">
@@ -28,18 +59,26 @@ export default function VendorListingsView({
                     <div className="relative flex-1 max-w-[300px]">
                         <input
                             type="text"
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
                             placeholder="Tìm sản phẩm của bạn..."
                             className="w-full border border-[#D5D9D9] rounded-[8px] pl-9 pr-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#FF9900]/30 focus:border-[#FF9900]"
                         />
                         <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
                     </div>
 
-                    <div className="relative w-[160px]">
-                        <select className="w-full appearance-none border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#FF9900] bg-white cursor-pointer">
-                            <option>Tất cả trạng thái</option>
-                            <option>Đang hoạt động</option>
-                            <option>Đã ẩn</option>
-                            <option>Đang cho thuê</option>
+                    <div className="relative w-[180px]">
+                        <select
+                            value={statusFilter}
+                            onChange={(event) => setStatusFilter(event.target.value as "ALL" | VendorProductStatus)}
+                            className="w-full appearance-none border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#FF9900] bg-white cursor-pointer"
+                        >
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="DRAFT">Bản nháp</option>
+                            <option value="PENDING_REVIEW">Chờ duyệt</option>
+                            <option value="APPROVED">Đã duyệt</option>
+                            <option value="REJECTED">Bị từ chối</option>
+                            <option value="ARCHIVED">Đã lưu trữ</option>
                         </select>
                         <ChevronDown className="w-4 h-4 text-[#6B7280] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -47,7 +86,7 @@ export default function VendorListingsView({
 
                 <button
                     type="button"
-                    onClick={() => setIsAddModalOpen(true)}
+                    onClick={openProductForm}
                     className="w-full sm:w-auto bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[14px] px-6 py-2 rounded-[8px] transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                     <Plus className="w-4 h-4" />
@@ -78,17 +117,21 @@ export default function VendorListingsView({
                         </div>
                     ))}
                 </div>
-            ) : products.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[16px] border border-[#E6E6E6] shadow-sm">
                     <PackageOpen className="w-16 h-16 text-[#D5D9D9] mb-4" />
-                    <h3 className="text-[18px] font-bold text-[#222222] mb-2">Chưa có sản phẩm nào</h3>
+                    <h3 className="text-[18px] font-bold text-[#222222] mb-2">
+                        {hasActiveFilters ? "Không có sản phẩm phù hợp" : "Chưa có sản phẩm nào"}
+                    </h3>
                     <p className="text-[14px] text-[#565959] max-w-[400px]">
-                        Gian hàng của bạn hiện tại chưa có sản phẩm nào. Hãy đăng sản phẩm đầu tiên để bắt đầu cho thuê nhé.
+                        {hasActiveFilters
+                            ? "Thử đổi từ khóa hoặc trạng thái để xem thêm sản phẩm."
+                            : "Gian hàng của bạn hiện tại chưa có sản phẩm nào. Hãy đăng sản phẩm đầu tiên để bắt đầu cho thuê."}
                     </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                    {products.map((product) => (
+                    {filteredProducts.map((product) => (
                         <VendorProductCard
                             key={product.product_id}
                             product={product}
@@ -98,10 +141,10 @@ export default function VendorListingsView({
                 </div>
             )}
 
-            <AddProductModal 
-                isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
-                onSuccess={onRefresh} 
+            <AddProductModal
+                isOpen={isAddModalOpen}
+                onClose={closeProductForm}
+                onSuccess={onRefresh}
             />
         </div>
     );

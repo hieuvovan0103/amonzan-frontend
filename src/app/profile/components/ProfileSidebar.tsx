@@ -1,88 +1,103 @@
 import {
     Bell,
     ClipboardList,
+    CreditCard,
+    Heart,
+    MapPin,
+    Star,
     UserCircle,
-} from 'lucide-react';
-import { ProfileTab } from '@/types/user-profile';
+} from "lucide-react";
+import type { ComponentType } from "react";
+import { ProfileTab } from "@/types/user-profile";
 
 type ProfileSidebarProps = {
     activeTab: ProfileTab;
     onChangeTab: (tab: ProfileTab) => void;
 };
 
-export default function ProfileSidebar({
-    activeTab,
-    onChangeTab,
-}: ProfileSidebarProps) {
+const items: Array<{
+    tab: ProfileTab;
+    label: string;
+    description: string;
+    icon: ComponentType<{ className?: string }>;
+}> = [
+    {
+        tab: "profile",
+        label: "Hồ sơ cá nhân",
+        description: "Thông tin và xác thực",
+        icon: UserCircle,
+    },
+    {
+        tab: "my_orders",
+        label: "Đơn hàng của tôi",
+        description: "Theo dõi thuê và hoàn trả",
+        icon: ClipboardList,
+    },
+    {
+        tab: "my_reviews",
+        label: "Đánh giá về tôi",
+        description: "Nhận xét từ các shop",
+        icon: Star,
+    },
+    {
+        tab: "favorites",
+        label: "Yêu thích",
+        description: "Sản phẩm đã lưu",
+        icon: Heart,
+    },
+    {
+        tab: "notifications",
+        label: "Thông báo",
+        description: "Cập nhật từ hệ thống",
+        icon: Bell,
+    },
+    {
+        tab: "addresses",
+        label: "Địa chỉ giao nhận",
+        description: "Nơi nhận và trả hàng",
+        icon: MapPin,
+    },
+    {
+        tab: "payments",
+        label: "Thanh toán",
+        description: "Thẻ và tài khoản ngân hàng",
+        icon: CreditCard,
+    },
+];
+
+export default function ProfileSidebar({ activeTab, onChangeTab }: ProfileSidebarProps) {
     return (
-        <aside className="w-full md:w-[240px] flex-shrink-0 bg-[#F7F7F7] md:bg-transparent">
-            <nav className="flex flex-col gap-2 md:sticky md:top-[90px]">
-                <button
-                    onClick={() => onChangeTab('notifications')}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-[10px] transition-all font-medium ${activeTab === 'notifications'
-                            ? 'bg-white shadow-sm text-[#FF9900]'
-                            : 'text-[#222222] hover:bg-white hover:shadow-sm'
-                        }`}
-                >
-                    <div className="flex items-center gap-3">
-                        <Bell className="w-5 h-5" />
-                        <span>Thông báo</span>
-                    </div>
+        <aside className="min-w-0 lg:sticky lg:top-[88px] lg:self-start">
+            <nav className="flex max-w-full gap-2 overflow-x-auto rounded-[8px] border border-[#D5D9D9] bg-white p-2 shadow-sm lg:flex-col lg:overflow-visible">
+                {items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.tab;
 
-                    <span className="bg-[#C62828] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">
-                        2
-                    </span>
-                </button>
-
-                <button
-                    onClick={() => onChangeTab('my_orders')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all font-medium ${activeTab === 'my_orders'
-                            ? 'bg-white shadow-sm text-[#FF9900]'
-                            : 'text-[#222222] hover:bg-white hover:shadow-sm'
-                        }`}
-                >
-                    <ClipboardList className="w-5 h-5" />
-                    <span>Đơn đi thuê</span>
-                </button>
-
-                <div className="flex flex-col mt-4">
-                    <div className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] text-[#222222] font-medium cursor-default">
-                        <UserCircle className="w-5 h-5 text-[#565959]" />
-                        <span>Tài khoản của tôi</span>
-                    </div>
-
-                    <div className="pl-[44px] pr-4 py-2 flex flex-col gap-4 text-left border-l border-[#D5D9D9] ml-6 mt-1">
+                    return (
                         <button
-                            onClick={() => onChangeTab('profile')}
-                            className={`text-[14px] font-bold text-left ${activeTab === 'profile'
-                                    ? 'text-[#FF9900]'
-                                    : 'text-[#565959] hover:text-[#222222]'
-                                }`}
+                            key={item.tab}
+                            type="button"
+                            onClick={() => onChangeTab(item.tab)}
+                            className={`flex min-w-[150px] max-w-[190px] flex-shrink-0 items-center gap-3 rounded-[6px] px-3 py-3 text-left transition-colors sm:min-w-[170px] lg:min-w-0 lg:max-w-none lg:flex-shrink ${
+                                isActive
+                                    ? "bg-[#FFF8E1] text-[#B12704]"
+                                    : "text-[#222222] hover:bg-[#F7F7F7]"
+                            }`}
                         >
-                            Hồ sơ cá nhân
-                        </button>
-
-                        <button
-                            onClick={() => onChangeTab('payments')}
-                            className={`text-[14px] font-bold text-left ${activeTab === 'payments'
-                                    ? 'text-[#FF9900]'
-                                    : 'text-[#565959] hover:text-[#222222]'
+                            <Icon
+                                className={`h-5 w-5 flex-shrink-0 ${
+                                    isActive ? "text-[#B12704]" : "text-[#565959]"
                                 }`}
-                        >
-                            Phương thức thanh toán
+                            />
+                            <span className="min-w-0">
+                                <span className="block truncate text-[14px] font-bold">{item.label}</span>
+                                <span className="hidden truncate text-[12px] text-[#565959] lg:block">
+                                    {item.description}
+                                </span>
+                            </span>
                         </button>
-
-                        <button
-                            onClick={() => onChangeTab('addresses')}
-                            className={`text-[14px] font-bold text-left ${activeTab === 'addresses'
-                                    ? 'text-[#FF9900]'
-                                    : 'text-[#565959] hover:text-[#222222]'
-                                }`}
-                        >
-                            Địa chỉ giao nhận
-                        </button>
-                    </div>
-                </div>
+                    );
+                })}
             </nav>
         </aside>
     );

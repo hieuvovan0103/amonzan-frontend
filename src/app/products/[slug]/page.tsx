@@ -1,9 +1,9 @@
-import { notFound } from 'next/navigation';
-import ProductDetailPurchase from './components/ProductDetailPurchase';
-import ProductReviews from './components/ProductReviews';
-import ProductSpecs from './components/ProductSpecs';
-import RelatedProductsSection from './components/RelatedProductsSection';
-import { getPublicProductDetail, getPublicProducts } from '@/lib/api/products';
+import { notFound } from "next/navigation";
+import ProductDetailPurchase from "./components/ProductDetailPurchase";
+import ProductReviews from "./components/ProductReviews";
+import ProductSpecs from "./components/ProductSpecs";
+import RelatedProductsSection from "./components/RelatedProductsSection";
+import { getPublicProductDetail, getPublicProducts } from "@/lib/api/products";
 
 type ProductDetailPageProps = {
     params: Promise<{
@@ -28,28 +28,26 @@ export default async function ProductDetailPage({
     });
 
     return (
-        <>
-            <main className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <ProductDetailPurchase product={product} />
+        <main className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-8 md:py-8">
+            <ProductDetailPurchase product={product} />
 
-                {relatedProducts.length > 0 && (
-                    <RelatedProductsSection
-                        title="Sản phẩm liên quan đến mặt hàng này"
-                        products={relatedProducts}
-                    />
-                )}
+            {relatedProducts.length > 0 && (
+                <RelatedProductsSection
+                    title="Sản phẩm liên quan đến mặt hàng này"
+                    products={relatedProducts}
+                />
+            )}
 
-                <ProductSpecs product={product} />
+            <ProductSpecs product={product} />
 
-                <ProductReviews product={product} />
+            <ProductReviews product={product} />
 
-                {relatedProducts.length > 0 && (
-                    <RelatedProductsSection
-                        title="Khách hàng cũng quan tâm đến các mặt hàng tương tự"
-                        products={relatedProducts}
-                    />
-                )}
-            </main>
-        </>
+            {relatedProducts.length > 0 && (
+                <RelatedProductsSection
+                    title="Khách hàng cũng quan tâm đến các mặt hàng tương tự"
+                    products={relatedProducts}
+                />
+            )}
+        </main>
     );
 }

@@ -16,7 +16,7 @@ export default function OrdersPage({ onSelectOrder }: OrdersPageProps) {
                         Quản lý đơn thuê
                     </h1>
                     <p className="text-[14px] text-[#565959] mt-1">
-                        Theo dõi vòng đời đơn hàng từ lúc đặt cọc đến khi trả đồ.
+                        Theo dõi vòng đời đơn hàng từ lúc thanh toán đến khi trả đồ.
                     </p>
                 </div>
 
@@ -62,7 +62,7 @@ export default function OrdersPage({ onSelectOrder }: OrdersPageProps) {
                                     {o.startDate} - {o.endDate}
                                 </td>
                                 <td className="p-4 text-right font-bold text-[#222222]">
-                                    {(o.total + o.deposit).toLocaleString()} ₫
+                                    {o.total.toLocaleString()} ₫
                                 </td>
                                 <td className="p-4 text-center">
                                     <AdminBadge status={o.status} />

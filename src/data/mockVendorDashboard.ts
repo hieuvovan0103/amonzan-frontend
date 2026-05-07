@@ -1,4 +1,4 @@
-import { VendorCalendarEvent, VendorProduct } from "@/types/vendor";
+import { VendorProduct } from "@/types/vendor";
 
 export const MOCK_VENDOR_PRODUCTS: VendorProduct[] = [
     {
@@ -48,29 +48,5 @@ export const MOCK_VENDOR_PRODUCTS: VendorProduct[] = [
         shop: "Shikaru Store",
         status: "ENABLE",
         stock: 1,
-    },
-];
-
-export const MOCK_VENDOR_EVENTS: VendorCalendarEvent[] = [
-    {
-        id: 1,
-        title: "Trang phục Levi",
-        start: 10,
-        end: 12,
-        color: "bg-purple-100 text-purple-800 border-purple-300",
-    },
-    {
-        id: 2,
-        title: "Máy ảnh Sony A7III",
-        start: 18,
-        end: 20,
-        color: "bg-[#FF9900]/20 text-[#E47911] border-[#FF9900]/50",
-    },
-    {
-        id: 3,
-        title: "Lều Naturehike",
-        start: 25,
-        end: 27,
-        color: "bg-blue-100 text-blue-800 border-blue-300",
     },
 ];

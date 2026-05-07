@@ -35,7 +35,7 @@ export default function AdminBadge({ status }: AdminBadgeProps) {
         RENTED: "Đang cho thuê",
         MAINTENANCE: "Bảo trì",
         DAMAGED: "Hư hỏng",
-        HELD: "Đang giữ cọc",
+        HELD: "Đang giữ",
         RELEASED: "Đã giải ngân",
         SUCCESS: "Thành công",
         RESOLVED: "Đã giải quyết",

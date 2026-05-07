@@ -1,10 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin, Search } from "lucide-react";
 import { suggestedKeywords } from "./home-data";
 
 export default function HeroSection() {
+  const router = useRouter();
+  const [keyword, setKeyword] = useState("");
+  const [province, setProvince] = useState("Hồ Chí Minh");
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const params = new URLSearchParams();
+    if (keyword.trim()) params.set("search", keyword.trim());
+    if (province) params.set("province", province);
+
+    router.push(params.toString() ? `/products?${params}` : "/products");
+  };
+
   return (
     <section className="relative overflow-hidden bg-white pt-16 pb-20 lg:pt-24 lg:pb-28">
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-gray-50 to-transparent" />
@@ -23,11 +39,16 @@ export default function HeroSection() {
         </p>
 
         <div className="mx-auto mt-10 max-w-3xl">
-          <div className="flex flex-col overflow-hidden rounded-sm border border-gray-300 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow focus-within:border-[#FF9900] focus-within:ring-1 focus-within:ring-[#FF9900] sm:flex-row">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col overflow-hidden rounded-sm border border-gray-300 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow focus-within:border-[#FF9900] focus-within:ring-1 focus-within:ring-[#FF9900] sm:flex-row"
+          >
             <div className="flex flex-grow items-center border-b border-gray-200 px-4 py-3 sm:border-b-0 sm:border-r sm:py-0">
               <Search className="mr-3 h-5 w-5 text-gray-400" />
               <input
                 type="text"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
                 placeholder="Bạn muốn tìm trang phục gì hôm nay?"
                 className="w-full text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
               />
@@ -35,20 +56,25 @@ export default function HeroSection() {
 
             <div className="flex items-center px-4 py-3 sm:py-0">
               <MapPin className="mr-2 h-5 w-5 text-gray-400" />
-              <select className="cursor-pointer bg-transparent text-gray-700 focus:outline-none">
-                <option>Hồ Chí Minh</option>
-                <option>Hà Nội</option>
-                <option>Đà Nẵng</option>
+              <select
+                value={province}
+                onChange={(event) => setProvince(event.target.value)}
+                className="cursor-pointer bg-transparent text-gray-700 focus:outline-none"
+              >
+                <option value="">Tất cả khu vực</option>
+                <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
               </select>
             </div>
 
-            <Link
-              href="/products"
+            <button
+              type="submit"
               className="bg-[#FF9900] px-8 py-4 text-center text-base font-bold text-gray-900 transition-colors hover:bg-[#e38800] sm:py-3"
             >
               Tìm kiếm
-            </Link>
-          </div>
+            </button>
+          </form>
 
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-sm text-gray-500">
             <span>Gợi ý:</span>

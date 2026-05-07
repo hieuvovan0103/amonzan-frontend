@@ -1,15 +1,22 @@
 "use client";
 
-import { Bell, Search, Home, LogOut } from "lucide-react";
+import { Search, Home, LogOut, Menu, Bell } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/useAuthStore";
 
-export default function AdminTopbar() {
+export default function AdminTopbar({ onOpenMobile }: { onOpenMobile?: () => void }) {
     const { signOut } = useAuthStore();
 
     return (
-        <header className="h-[64px] bg-white border-b border-[#E6E6E6] flex items-center justify-between px-6 z-40 shadow-sm">
+        <header className="h-[64px] bg-white border-b border-[#E6E6E6] flex items-center justify-between px-4 md:px-6 z-40 shadow-sm">
             <div className="flex items-center gap-4">
+                <button
+                    type="button"
+                    onClick={onOpenMobile}
+                    className="md:hidden p-2 -ml-2 text-[#222222] hover:bg-[#F7F7F7] rounded-xl transition-colors"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
                 <div className="relative hidden md:block w-80">
                     <input
                         type="text"

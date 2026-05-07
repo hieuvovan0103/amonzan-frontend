@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { formatPrice } from "@/app/utils/formatPrice";
 import type { ProductDetail } from "@/lib/api/products";
 
 type ProductSpecsProps = {
@@ -20,8 +19,6 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
         (total, variant) => total + Number(variant.available_stock ?? 0),
         0,
     );
-    const deposits = product.variants.map((variant) => Number(variant.deposit_requirement ?? 0));
-    const minDeposit = deposits.length ? Math.min(...deposits) : 0;
     const sizeNames = product.availableSizes
         .map((size) => size.name)
         .filter((size) => size.trim().toLowerCase() !== "mặc định");
@@ -69,9 +66,6 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
                     <div className="grid grid-cols-2 gap-y-3 text-[14px]">
                         <span className="font-medium text-[#565959]">Giá từ</span>
                         <span className="text-[#222222]">{product.price} vnđ/ngày</span>
-
-                        <span className="font-medium text-[#565959]">Tiền cọc từ</span>
-                        <span className="text-[#222222]">{formatPrice(minDeposit)} VNĐ</span>
 
                         <span className="font-medium text-[#565959]">Tồn kho</span>
                         <span className="text-[#222222]">{availableStock}/{totalStock}</span>

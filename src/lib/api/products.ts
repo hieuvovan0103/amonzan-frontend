@@ -81,6 +81,8 @@ type PublicProductDetailApi = {
     rating: number;
     comment: string | null;
     created_at: string;
+    reviewer_name?: string | null;
+    reviewer_avatar_url?: string | null;
   }>;
 };
 
@@ -101,6 +103,8 @@ export type ProductReview = {
   rating: number;
   comment: string;
   createdAt: string;
+  reviewerName: string;
+  reviewerAvatarUrl?: string | null;
 };
 
 export type ProductDetail = {
@@ -124,6 +128,14 @@ export type ProductDetail = {
   reviews: ProductReview[];
   ratingDistribution: Record<1 | 2 | 3 | 4 | 5, number>;
   variants: PublicProductDetailApi["product_variants"];
+};
+
+export type ProductAvailability = {
+  available: boolean;
+  availableStock: number;
+  bookedQuantity: number;
+  blocked: boolean;
+  message: string | null;
 };
 
 const fallbackImage = "/file.svg";
@@ -161,6 +173,10 @@ export async function getPublicProducts(params?: {
   page?: number;
   limit?: number;
   categorySlug?: string;
+  search?: string;
+  province?: string;
+  minPrice?: number;
+  maxPrice?: number;
   sort?: "newest" | "price_asc" | "price_desc" | "rating_desc";
 }): Promise<ProductListResult> {
   let res: Response;
@@ -209,7 +225,10 @@ export async function getPublicProducts(params?: {
   };
 }
 
-export async function getPublicProductDetail(slug: string): Promise<ProductDetail | null> {
+export async function getPublicProductDetail(
+  slug: string,
+  options?: { silent?: boolean },
+): Promise<ProductDetail | null> {
   let res: Response;
 
   try {
@@ -217,7 +236,9 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
       cache: "no-store",
     });
   } catch (error) {
-    console.error(`[products] Failed to fetch product detail for "${slug}":`, error);
+    if (!options?.silent) {
+      console.warn(`[products] Failed to fetch product detail for "${slug}":`, error);
+    }
     return null;
   }
 
@@ -230,7 +251,7 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((image) => image.image_url);
   const availableVariants = (product.product_variants ?? []).filter(
-    (variant) => Number(variant.available_stock) > 0,
+    (variant) => Number(variant.available_stock ?? 0) > 0,
   );
   const availableSizes = availableVariants.map((variant) => ({
     variantId: variant.variant_id,
@@ -249,6 +270,8 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
     rating: Number(review.rating ?? 0),
     comment: review.comment ?? "",
     createdAt: review.created_at,
+    reviewerName: review.reviewer_name || "Người thuê Amonzan",
+    reviewerAvatarUrl: review.reviewer_avatar_url ?? null,
   }));
   const ratingDistribution = reviews.reduce<Record<1 | 2 | 3 | 4 | 5, number>>(
     (acc, review) => {
@@ -287,4 +310,37 @@ export async function getPublicProductDetail(slug: string): Promise<ProductDetai
     ratingDistribution,
     variants: product.product_variants ?? [],
   };
+}
+
+export async function getPublicProductAvailability(params: {
+  slug: string;
+  variantId: string;
+  start: string;
+  end: string;
+}, options?: { silent?: boolean }): Promise<ProductAvailability | null> {
+  let res: Response;
+
+  try {
+    res = await fetch(
+      buildUrl(`/products/${params.slug}/availability`, {
+        variantId: params.variantId,
+        start: params.start,
+        end: params.end,
+      }),
+      {
+        cache: "no-store",
+      },
+    );
+  } catch (error) {
+    if (!options?.silent) {
+      console.warn("[products] Failed to fetch product availability:", error);
+    }
+    return null;
+  }
+
+  if (!res.ok) {
+    return null;
+  }
+
+  return res.json() as Promise<ProductAvailability>;
 }

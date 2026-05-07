@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type DatePickerFieldProps = {
@@ -9,6 +9,8 @@ type DatePickerFieldProps = {
     placeholder?: string;
     minYear?: number;
     maxYear?: number;
+    minDate?: string;
+    maxDate?: string;
     onChange: (value: string) => void;
 };
 
@@ -28,6 +30,7 @@ const MONTHS = [
 ];
 
 const WEEK_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const DATE_PICKER_OPEN_EVENT = 'amonzan:date-picker-open';
 
 function formatDateToInputValue(date: Date) {
     const year = date.getFullYear();
@@ -56,8 +59,12 @@ export default function DatePickerField({
     placeholder = 'Chọn ngày',
     minYear = 1950,
     maxYear = new Date().getFullYear(),
+    minDate,
+    maxDate,
     onChange,
 }: DatePickerFieldProps) {
+    const pickerId = useId();
+    const rootRef = useRef<HTMLDivElement>(null);
     const selectedDate = value ? new Date(value) : null;
     const initialDate = selectedDate || new Date();
 
@@ -95,6 +102,41 @@ export default function DatePickerField({
         return days;
     }, [viewMonth, viewYear]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!rootRef.current?.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        const handleOtherPickerOpen = (event: Event) => {
+            const detail = (event as CustomEvent<{ pickerId: string }>).detail;
+
+            if (detail?.pickerId !== pickerId) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+        window.addEventListener(DATE_PICKER_OPEN_EVENT, handleOtherPickerOpen);
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+            window.removeEventListener(DATE_PICKER_OPEN_EVENT, handleOtherPickerOpen);
+        };
+    }, [isOpen, pickerId]);
+
+    const openPicker = () => {
+        window.dispatchEvent(
+            new CustomEvent(DATE_PICKER_OPEN_EVENT, {
+                detail: { pickerId },
+            }),
+        );
+        setIsOpen(true);
+    };
+
     const handlePrevMonth = () => {
         if (viewMonth === 0) {
             setViewMonth(11);
@@ -117,8 +159,20 @@ export default function DatePickerField({
 
     const handleSelectDate = (day: number) => {
         const date = new Date(viewYear, viewMonth, day);
-        onChange(formatDateToInputValue(date));
+        const inputValue = formatDateToInputValue(date);
+
+        if (isDateDisabled(inputValue)) {
+            return;
+        }
+
+        onChange(inputValue);
         setIsOpen(false);
+    };
+
+    const isDateDisabled = (inputValue: string) => {
+        if (minDate && inputValue < minDate) return true;
+        if (maxDate && inputValue > maxDate) return true;
+        return false;
     };
 
     const isSelectedDay = (day: number) => {
@@ -132,7 +186,7 @@ export default function DatePickerField({
     };
 
     return (
-        <div className="relative w-full">
+        <div ref={rootRef} className="relative w-full">
             {label && (
                 <label className="block text-[14px] font-medium text-[#565959] mb-2">
                     {label}
@@ -141,7 +195,14 @@ export default function DatePickerField({
 
             <button
                 type="button"
-                onClick={() => setIsOpen((prev) => !prev)}
+                onClick={() => {
+                    if (isOpen) {
+                        setIsOpen(false);
+                        return;
+                    }
+
+                    openPicker();
+                }}
                 className="w-full border border-[#D5D9D9] rounded-[8px] px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] transition-all shadow-sm bg-white flex items-center justify-between"
             >
                 <span className={value ? 'text-[#222222]' : 'text-[#6B7280]'}>
@@ -214,12 +275,18 @@ export default function DatePickerField({
                                 return <div key={`empty-${index}`} className="h-9" />;
                             }
 
+                            const inputValue = formatDateToInputValue(
+                                new Date(viewYear, viewMonth, day),
+                            );
+                            const disabled = isDateDisabled(inputValue);
+
                             return (
                                 <button
                                     key={day}
                                     type="button"
+                                    disabled={disabled}
                                     onClick={() => handleSelectDate(day)}
-                                    className={`h-9 rounded-full text-[13px] font-semibold transition-colors ${isSelectedDay(day)
+                                    className={`h-9 rounded-full text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:text-[#C7CDD3] disabled:hover:bg-transparent ${isSelectedDay(day)
                                             ? 'bg-[#FF9900] text-[#111111]'
                                             : 'text-[#222222] hover:bg-[#FFF8E1]'
                                         }`}

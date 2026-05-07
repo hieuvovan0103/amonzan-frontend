@@ -27,10 +27,7 @@ export default function AccountMenu({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
@@ -111,9 +108,7 @@ export default function AccountMenu({
               </Link>
             )}
 
-            {(isVendor || isAdmin) && (
-              <div className="mx-4 my-1 h-px bg-[#E6E6E6]" />
-            )}
+            {(isVendor || isAdmin) && <div className="mx-4 my-1 h-px bg-[#E6E6E6]" />}
 
             <Link
               href="/products"

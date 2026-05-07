@@ -7,7 +7,7 @@ export default function PaymentsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white p-6 rounded-[16px] border border-[#E6E6E6] shadow-sm">
                     <div className="text-[11px] text-[#6B7280] font-bold uppercase tracking-wider mb-2">
-                        Tổng escrow đang giữ
+                        Tổng tiền đang xử lý
                     </div>
                     <div className="text-[26px] font-bold text-[#007185]">
                         3.450.000.000 ₫
@@ -40,7 +40,7 @@ export default function PaymentsPage() {
                             <th className="p-4 font-semibold">Loại giao dịch</th>
                             <th className="p-4 font-semibold">Phương thức</th>
                             <th className="p-4 font-semibold">Số tiền</th>
-                            <th className="p-4 text-center font-semibold">Escrow</th>
+                            <th className="p-4 text-center font-semibold">Trạng thái</th>
                         </tr>
                     </thead>
 
@@ -59,7 +59,7 @@ export default function PaymentsPage() {
                                         {t.type === "RENTAL_FEE"
                                             ? "Tiền thuê"
                                             : t.type === "DEPOSIT"
-                                                ? "Tiền cọc"
+                                                ? "Thanh toán đơn"
                                                 : "Hoàn tiền"}
                                     </span>
                                 </td>

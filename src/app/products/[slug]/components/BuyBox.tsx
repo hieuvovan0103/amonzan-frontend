@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { formatPrice } from "@/app/utils/formatPrice";
-import type { ProductDetail, ProductSizeOption } from "@/lib/api/products";
+import type {
+    ProductAvailability,
+    ProductDetail,
+    ProductSizeOption,
+} from "@/lib/api/products";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { calculateRentalDays } from "@/lib/rental-days";
 
 type BuyBoxProps = {
     product: ProductDetail;
@@ -14,6 +19,8 @@ type BuyBoxProps = {
     rentalEnd: string;
     location: string;
     storeName: string;
+    availability?: ProductAvailability | null;
+    isCheckingAvailability?: boolean;
 };
 
 function formatRentalDate(value: string) {
@@ -32,16 +39,26 @@ export default function BuyBox({
     rentalEnd,
     location,
     storeName,
+    availability,
+    isCheckingAvailability = false,
 }: BuyBoxProps) {
     const { user } = useAuthStore();
     const addItem = useCartStore((state) => state.addItem);
     const showToast = useToastStore((state) => state.show);
     const isOutOfStock = !selectedSize || selectedSize.availableStock <= 0;
+    const effectiveAvailableStock = availability?.availableStock ?? selectedSize?.availableStock;
     const selectedPriceValue = selectedSize?.priceValue ?? product.priceValue;
     const selectedPrice = formatPrice(selectedPriceValue);
+    const rentalDays = calculateRentalDays(rentalStart, rentalEnd);
+    const displayedPrice = rentalDays > 0
+        ? formatPrice(selectedPriceValue * rentalDays)
+        : selectedPrice;
     const selectedSizeName = selectedSize?.name ?? product.sizes[0] ?? "Mặc định";
     const shouldShowSelectedSize = selectedSizeName.trim().toLowerCase() !== "mặc định";
     const hasRentalDates = Boolean(rentalStart && rentalEnd);
+    const hasDateRangeError = Boolean(rentalStart && rentalEnd && rentalEnd <= rentalStart);
+    const isDateUnavailable = Boolean(availability && !availability.available);
+    const isActionDisabled = isCheckingAvailability || hasDateRangeError || isDateUnavailable;
     const rentDates = hasRentalDates
         ? `${formatRentalDate(rentalStart)} - ${formatRentalDate(rentalEnd)}`
         : "Chưa chọn thời gian thuê";
@@ -57,6 +74,24 @@ export default function BuyBox({
             return;
         }
 
+        if (hasDateRangeError) {
+            showToast("Ngày trả phải sau ngày thuê.", "error");
+            return;
+        }
+
+        if (isCheckingAvailability) {
+            showToast("Vui lòng chờ hệ thống kiểm tra lịch thuê.", "info");
+            return;
+        }
+
+        if (isDateUnavailable) {
+            showToast(
+                availability?.message || "Sản phẩm không khả dụng trong thời gian đã chọn.",
+                "error",
+            );
+            return;
+        }
+
         addItem({
             productId: product.id,
             variantId: selectedSize?.variantId,
@@ -65,6 +100,7 @@ export default function BuyBox({
             rentDates,
             rentalStart,
             rentalEnd,
+            rentalDays: rentalDays || undefined,
             pricePerDay: selectedPrice,
             size: selectedSizeName,
             color: "Mặc định",
@@ -72,7 +108,7 @@ export default function BuyBox({
             image: product.images[0] ?? "/file.svg",
             shopId: product.shopId,
             shopName: storeName,
-            availableStock: selectedSize?.availableStock,
+            availableStock: effectiveAvailableStock,
         });
         showToast(
             shouldShowSelectedSize
@@ -100,10 +136,20 @@ export default function BuyBox({
         <div className="border border-[#E6E6E6] rounded-[6px] p-5 shadow-[0_1px_2px_rgba(15,17,17,0.06),_0_4px_14px_rgba(15,17,17,0.05)] bg-white sticky top-[90px]">
             <div className="flex items-baseline gap-1 mb-2">
                 <span className="text-[28px] font-bold text-[#C62828] leading-none">
-                    {selectedPrice}
+                    {displayedPrice}
                 </span>
                 <span className="text-[14px] font-bold text-[#C62828]">vnđ</span>
             </div>
+
+            {rentalDays > 0 && (
+                <p className="mb-3 text-[13px] text-[#565959]">
+                    {"T\u1ed5ng ti\u1ec1n thu\u00ea "}
+                    {rentalDays}
+                    {" ng\u00e0y \u00b7 "}
+                    {selectedPrice}
+                    {" vn\u0111/ng\u00e0y"}
+                </p>
+            )}
 
             {selectedSize && shouldShowSelectedSize && (
                 <div className="mb-3 text-[13px] text-[#565959]">
@@ -135,14 +181,16 @@ export default function BuyBox({
                     <>
                         <button
                             onClick={handleAddToCart}
-                            className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                            disabled={isActionDisabled}
+                            className="w-full bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm disabled:cursor-not-allowed disabled:border-[#E6E6E6] disabled:bg-[#F7F7F7] disabled:text-[#6B7280]"
                         >
-                            Thêm vào giỏ
+                            {isCheckingAvailability ? "Đang kiểm tra lịch..." : "Thêm vào giỏ"}
                         </button>
 
                         <button
                             onClick={handleRentNow}
-                            className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm"
+                            disabled={isActionDisabled}
+                            className="w-full bg-[#FF9900] hover:bg-[#E47911] text-[#111111] font-semibold text-[14px] py-3 rounded-[4px] transition-colors shadow-sm disabled:cursor-not-allowed disabled:bg-[#F7F7F7] disabled:text-[#6B7280]"
                         >
                             Thuê ngay
                         </button>

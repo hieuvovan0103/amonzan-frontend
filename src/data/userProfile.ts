@@ -18,7 +18,7 @@ export const MOCK_NOTIFICATIONS: UserNotification[] = [
     {
         id: 2,
         type: 'SYSTEM',
-        title: 'Hoàn cọc thành công',
+        title: 'Hoàn tiền thành công',
         content:
             'Số tiền 500.000đ từ đơn #ORD-7712 đã được hoàn vào Ví Amonzan của bạn.',
         time: '2 giờ trước',
@@ -74,7 +74,7 @@ export const MOCK_MY_ORDERS: RentalOrder[] = [
         },
         status: 'COMPLETED',
         statusText: 'Đã hoàn thành',
-        deliveryInfo: 'Đã trả đồ và nhận lại cọc ngày 15/04',
+        deliveryInfo: 'Đã trả đồ ngày 15/04',
         rentDates: '12/04 - 14/04/2026',
     },
     {

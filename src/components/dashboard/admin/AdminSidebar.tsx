@@ -20,6 +20,8 @@ type AdminSidebarProps = {
     setActiveTab: (tab: AdminTab) => void;
     isSidebarOpen: boolean;
     setIsSidebarOpen: (value: boolean) => void;
+    isMobileOpen?: boolean;
+    setIsMobileOpen?: (value: boolean) => void;
 };
 
 export default function AdminSidebar({
@@ -27,11 +29,16 @@ export default function AdminSidebar({
     setActiveTab,
     isSidebarOpen,
     setIsSidebarOpen,
+    isMobileOpen,
+    setIsMobileOpen,
 }: AdminSidebarProps) {
     return (
         <aside
-            className={`bg-white border-r border-[#E6E6E6] flex flex-col transition-all duration-300 ease-in-out shadow-lg z-50 ${isSidebarOpen ? "w-[260px]" : "w-[80px]"
-                }`}
+            className={`bg-white border-r border-[#E6E6E6] flex flex-col transition-all duration-300 ease-in-out shadow-lg z-50 fixed inset-y-0 left-0 md:relative ${
+                isMobileOpen ? "w-[260px] translate-x-0" : "-translate-x-full md:translate-x-0"
+            } ${!isMobileOpen && isSidebarOpen ? "md:w-[260px]" : ""} ${
+                !isMobileOpen && !isSidebarOpen ? "md:w-[80px]" : ""
+            }`}
         >
             <div className="p-5 border-b border-[#E6E6E6] flex items-center justify-between h-[64px]">
                 {isSidebarOpen && (

@@ -3,6 +3,8 @@ export type AdminTab =
     | "accounts"
     | "orders"
     | "products"
+    | "categories"
+    | "reviews"
     | "vendor_verification"
     | "inventory"
     | "payments"
@@ -94,4 +96,53 @@ export type AdminUser = {
     activeOrders: number;
     escrowBalance: number;
     joined: string;
+};
+
+export type AdminReturnDispute = {
+    disputeId: string;
+    orderId: string;
+    type: "RETURN_DISPUTE" | "EARLY_RETURN_DISPUTE" | string;
+    reason: string | null;
+    resolution: string | null;
+    status: string;
+    evidenceUrls: string[];
+    openedAt: string;
+    resolvedAt: string | null;
+    complaint: {
+        complaintId: string;
+        title: string;
+        description: string | null;
+        status: string;
+        type: string;
+        evidenceUrls: string[];
+        createdAt: string;
+        complainantName: string;
+        complainantEmail: string | null;
+        complainantPhone: string | null;
+    } | null;
+    order: {
+        status: string;
+        paymentStatus: string;
+        rentalStart: string;
+        rentalEnd: string;
+        totalAmount: number;
+        lateFee: number;
+        damageFee: number;
+    };
+    renter: {
+        fullName: string;
+        email: string | null;
+        phoneNumber: string | null;
+    };
+    shop: {
+        name: string;
+        ownerName: string | null;
+    };
+    items: Array<{
+        productName: string;
+        variantName: string | null;
+        quantity: number;
+        shopName: string | null;
+        shopOwnerName: string | null;
+    }>;
 };

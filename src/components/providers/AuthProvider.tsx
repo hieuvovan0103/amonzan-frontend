@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { supabase } from "@/lib/supabase";
+import {
+  isInvalidRefreshTokenError,
+  resetBrokenSupabaseSession,
+  supabase,
+} from "@/lib/supabase";
 import { BASE_URL } from "@/lib/apiClient";
 import type { Session } from "@supabase/supabase-js";
 
@@ -35,22 +39,72 @@ async function fetchWithRetry(
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuth = useAuthStore((state) => state.setAuth);
+  const syncRunIdRef = useRef(0);
+
+  const fetchProfile = useCallback(async (session: Session) => {
+    const res = await fetchWithRetry(`${BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (res?.ok) {
+      const data = await res.json();
+      useAuthStore.getState().setProfile(data.profile);
+      return;
+    }
+
+    if (res?.status === 401) {
+      useAuthStore.getState().setProfile(null);
+      useAuthStore.getState().setAuth(null, null);
+    }
+  }, []);
+
+  const syncAuthFromSupabase = useCallback(async () => {
+    const runId = syncRunIdRef.current + 1;
+    syncRunIdRef.current = runId;
+    useAuthStore.getState().setSyncing(true);
+
+    let session: Session | null = null;
+    let error: unknown = null;
+
+    try {
+      const result = await supabase.auth.getSession();
+      session = result.data.session;
+      error = result.error;
+    } catch (err) {
+      error = err;
+    }
+
+    if (runId !== syncRunIdRef.current) {
+      return;
+    }
+
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        await resetBrokenSupabaseSession();
+      } else {
+        console.warn("❌ [AuthProvider] Lỗi đồng bộ session:", error);
+      }
+      useAuthStore.getState().setProfile(null);
+      setAuth(null, null);
+      return;
+    }
+
+    setAuth(session, session?.user || null);
+
+    if (session) {
+      await fetchProfile(session);
+    } else {
+      useAuthStore.getState().setProfile(null);
+    }
+  }, [fetchProfile, setAuth]);
 
   useEffect(() => {
-    const fetchProfile = async (session: Session) => {
-      const res = await fetchWithRetry(`${BASE_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res?.ok) {
-        const data = await res.json();
-        useAuthStore.getState().setProfile(data.profile);
-      }
-    };
-
+    let isMounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
     // Lắng nghe các event đăng nhập, đăng xuất, token refresh
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const handleAuthChange = (event: string, session: Session | null) => {
+      if (!isMounted) return;
+
       console.log('✅ [AuthProvider] Sự kiện cập nhật trạng thái:', event);
       if (session) {
         console.log('✅ [AuthProvider] Đã lấy được Session hợp lệ cho:', session.user.email);
@@ -80,25 +134,43 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         useAuthStore.getState().setProfile(null);
       }
       setAuth(session, session?.user || null);
+    };
+
+    syncAuthFromSupabase().then(() => {
+      if (!isMounted) return;
+
+      const result = supabase.auth.onAuthStateChange(handleAuthChange);
+      subscription = result.data.subscription;
+      void supabase.auth.startAutoRefresh();
     });
 
-    // Load session lần đầu khi app mount
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) console.error('❌ [AuthProvider] Lỗi tải session cục bộ:', error);
-      else {
-        console.log(
-          '✅ [AuthProvider] Load lần đầu:',
-          session ? `Thành công (${session.user.email})` : 'Không có session.',
-        );
-        if (session) fetchProfile(session);
+    const handlePageShow = () => {
+      syncAuthFromSupabase();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncAuthFromSupabase();
       }
-      setAuth(session, session?.user || null);
-    });
+    };
+
+    const handleFocus = () => {
+      syncAuthFromSupabase();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
+      subscription?.unsubscribe();
+      void supabase.auth.stopAutoRefresh();
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, [setAuth]);
+  }, [fetchProfile, setAuth, syncAuthFromSupabase]);
 
   return <>{children}</>;
 }

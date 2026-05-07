@@ -36,6 +36,10 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const id = createCartItemId(item);
           const existingItem = state.items.find((cartItem) => cartItem.id === id);
+          const requestedQuantity = item.quantity ?? 1;
+          const maxQuantity = item.availableStock && item.availableStock > 0
+            ? item.availableStock
+            : undefined;
 
           if (existingItem) {
             return {
@@ -43,7 +47,11 @@ export const useCartStore = create<CartState>()(
                 cartItem.id === id
                   ? {
                       ...cartItem,
-                      quantity: cartItem.quantity + (item.quantity ?? 1),
+                      availableStock: item.availableStock ?? cartItem.availableStock,
+                      quantity: Math.min(
+                        cartItem.quantity + requestedQuantity,
+                        maxQuantity ?? cartItem.availableStock ?? cartItem.quantity + requestedQuantity,
+                      ),
                       selected: true,
                     }
                   : cartItem,
@@ -57,7 +65,7 @@ export const useCartStore = create<CartState>()(
               {
                 ...item,
                 id,
-                quantity: item.quantity ?? 1,
+                quantity: Math.min(requestedQuantity, maxQuantity ?? requestedQuantity),
                 selected: true,
               },
             ],
@@ -72,7 +80,17 @@ export const useCartStore = create<CartState>()(
       updateQuantity: (id, quantity) =>
         set((state) => ({
           items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item,
+            item.id === id
+              ? {
+                  ...item,
+                  quantity: Math.min(
+                    Math.max(1, quantity),
+                    item.availableStock && item.availableStock > 0
+                      ? item.availableStock
+                      : Math.max(1, quantity),
+                  ),
+                }
+              : item,
           ),
         })),
 

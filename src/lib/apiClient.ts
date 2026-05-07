@@ -1,4 +1,8 @@
-import { supabase } from './supabase';
+import {
+  isInvalidRefreshTokenError,
+  resetBrokenSupabaseSession,
+  supabase,
+} from './supabase';
 import { BASE_URL } from './config';
 
 export { BASE_URL };
@@ -9,7 +13,24 @@ export { BASE_URL };
  */
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   // Lấy token mới nhất
-  const { data: { session } } = await supabase.auth.getSession();
+  let session = null;
+
+  try {
+    const result = await supabase.auth.getSession();
+    session = result.data.session;
+
+    if (result.error && isInvalidRefreshTokenError(result.error)) {
+      await resetBrokenSupabaseSession();
+      session = null;
+    }
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) {
+      await resetBrokenSupabaseSession();
+    } else {
+      console.warn("[apiClient] Không thể lấy session:", error);
+    }
+    session = null;
+  }
   
   const headers = new Headers(options.headers || {});
   
@@ -29,7 +50,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   // Tuỳ chọn: Nếu Backend (NestJS) trả 401 Unauthorized do token sai/hết hạn, có thể kích hoạt đăng xuất tự động
   if (response.status === 401) {
     console.warn("Token expired or invalid. Auto logging out...");
-    await supabase.auth.signOut();
+    await resetBrokenSupabaseSession();
   }
 
   return response;
