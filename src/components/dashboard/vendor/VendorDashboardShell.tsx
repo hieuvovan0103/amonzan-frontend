@@ -10,7 +10,6 @@ import VendorRentalsCalendarView from "@/components/dashboard/vendor/VendorRenta
 import VendorShopSettingsView from "@/components/dashboard/vendor/VendorShopSettingsView";
 import VendorOrdersView from "@/components/dashboard/vendor/VendorOrdersView";
 import ReturnRequestList from "@/components/returns/ReturnRequestList";
-import { MOCK_VENDOR_EVENTS } from "@/data/mockVendorDashboard";
 import { ApiProduct, VendorTab } from "@/types/vendor";
 import { getVendorProducts } from "@/lib/api/vendor";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -104,18 +103,18 @@ function getRestoredSelectedProduct(products: ApiProduct[]) {
     return products.find((product) => product.product_id === productId) ?? null;
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
+}
+
 export default function VendorDashboardShell() {
-    const [activeTab, setActiveTabState] = useState<VendorTab>("vendor_listings");
+    const [activeTab, setActiveTabState] = useState<VendorTab>(() => getInitialVendorTab());
     const [selectedProduct, setSelectedProduct] = useState<ApiProduct | null>(null);
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const { profile, signOut } = useAuthStore();
-
-    useEffect(() => {
-        setActiveTabState(getInitialVendorTab());
-    }, []);
 
     const fetchProducts = useCallback(async () => {
         setIsLoading(true);
@@ -128,15 +127,19 @@ export default function VendorDashboardShell() {
                     ? data.find((product) => product.product_id === current.product_id) ?? current
                     : getRestoredSelectedProduct(data),
             );
-        } catch (err: any) {
-            setError(err.message || "Không thể tải danh sách sản phẩm");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Không thể tải danh sách sản phẩm"));
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchProducts();
+        const timer = window.setTimeout(() => {
+            void fetchProducts();
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, [fetchProducts]);
 
     useEffect(() => {
@@ -169,11 +172,15 @@ export default function VendorDashboardShell() {
         if (selectedProduct || products.length === 0) return;
 
         const restoredProduct = getRestoredSelectedProduct(products);
-        if (restoredProduct) {
-            setSelectedProduct(restoredProduct);
-        } else {
-            setActiveTabState("vendor_listings");
-        }
+        const timer = window.setTimeout(() => {
+            if (restoredProduct) {
+                setSelectedProduct(restoredProduct);
+            } else {
+                setActiveTabState("vendor_listings");
+            }
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, [activeTab, products, selectedProduct]);
 
     const setActiveTab = (tab: VendorTab) => {
@@ -338,7 +345,7 @@ export default function VendorDashboardShell() {
                         )}
 
                         {activeTab === "rentals_calendar" && (
-                            <VendorRentalsCalendarView events={MOCK_VENDOR_EVENTS} />
+                            <VendorRentalsCalendarView />
                         )}
 
                         {activeTab === "vendor_orders" && (

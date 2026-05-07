@@ -13,24 +13,28 @@ export const categories = [
   {
     id: 1,
     name: "Váy dạ hội",
+    slug: "vay-da-hoi",
     icon: Sparkles,
     count: "3.2k+",
   },
   {
     id: 2,
     name: "Vest & suit nam",
+    slug: "vest-suit-nam",
     icon: Briefcase,
     count: "1.5k+",
   },
   {
     id: 3,
     name: "Trang phục truyền thống",
+    slug: "trang-phuc-truyen-thong",
     icon: Shirt,
     count: "2.8k+",
   },
   {
     id: 4,
     name: "Phụ kiện & trang sức",
+    slug: "phu-kien-trang-suc",
     icon: Gem,
     count: "1.1k+",
   },

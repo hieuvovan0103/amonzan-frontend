@@ -169,10 +169,16 @@ export type VendorEarlyReturnRequest = {
 };
 
 export type VendorCalendarEvent = {
-  id: number;
+  id: string;
+  orderId: string;
   title: string;
-  start: number;
-  end: number;
+  status: string;
+  paymentStatus: string;
+  rentalStart: string;
+  rentalEnd: string;
+  renterName: string;
+  totalAmount: number;
+  items: VendorOrder["items"];
   color: string;
 };
 

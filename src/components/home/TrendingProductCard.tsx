@@ -7,9 +7,13 @@ type TrendingProductCardProps = {
 };
 
 export default function TrendingProductCard({ item }: TrendingProductCardProps) {
+    const href = item.slug.startsWith("fallback-")
+        ? `/products?search=${encodeURIComponent(item.title)}`
+        : `/products/${item.slug}`;
+
     return (
         <Link
-            href={`/products/${item.slug}`}
+            href={href}
             className="group flex flex-col overflow-hidden rounded-sm border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#FF9900] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
             <div className="relative aspect-square overflow-hidden bg-gray-100">

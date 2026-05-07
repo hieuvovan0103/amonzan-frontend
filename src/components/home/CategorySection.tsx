@@ -1,9 +1,35 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Shirt, type LucideIcon } from "lucide-react";
 import { categories } from "./home-data";
 import CategoryCard from "./CategoryCard";
+import { getPublicCategories } from "@/lib/api/categories";
 
-export default function CategorySection() {
+type LandingCategory = {
+    id: number | string;
+    name: string;
+    slug: string;
+    icon: LucideIcon;
+    count: string;
+};
+
+export default async function CategorySection() {
+    let displayedCategories: LandingCategory[] = categories;
+
+    try {
+        const apiCategories = await getPublicCategories();
+        if (apiCategories.length > 0) {
+            displayedCategories = apiCategories.slice(0, 4).map((category) => ({
+                id: category.category_id,
+                name: category.name,
+                slug: category.slug,
+                icon: Shirt,
+                count: "Xem",
+            }));
+        }
+    } catch {
+        displayedCategories = categories;
+    }
+
     return (
         <section className="bg-gray-50 py-12">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -27,7 +53,7 @@ export default function CategorySection() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
-                    {categories.map((category) => (
+                    {displayedCategories.map((category) => (
                         <CategoryCard key={category.id} category={category} />
                     ))}
                 </div>

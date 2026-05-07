@@ -2,14 +2,31 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import TrendingProductCard from "./TrendingProductCard";
 import { getPublicProducts } from "@/lib/api/products";
+import { trendingItems } from "./home-data";
+import type { ProductListItem } from "@/types/product";
+
+function mapFallbackTrendingItem(item: (typeof trendingItems)[number]): ProductListItem {
+    return {
+        id: item.id,
+        slug: `fallback-${item.id}`,
+        title: item.title,
+        shopName: item.vendor,
+        rating: item.rating,
+        reviews: item.reviews,
+        price: item.price.toLocaleString("vi-VN"),
+        image: item.image,
+        location: item.location,
+    };
+}
 
 export default async function TrendingSection() {
     const { products } = await getPublicProducts({
         sort: "rating_desc",
         limit: 4,
     });
-
-    if (products.length === 0) return null;
+    const displayedProducts = products.length > 0
+        ? products
+        : trendingItems.map(mapFallbackTrendingItem);
 
     return (
         <section className="border-y border-gray-100 bg-white py-16">
@@ -34,7 +51,7 @@ export default async function TrendingSection() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {products.map((item) => (
+                    {displayedProducts.map((item) => (
                         <TrendingProductCard key={item.id} item={item} />
                     ))}
                 </div>
