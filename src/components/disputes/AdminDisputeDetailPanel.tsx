@@ -1,4 +1,5 @@
-import { FileSearch, Scale } from "lucide-react";
+import { FileSearch, Scale, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type { AdminDisputeDetail } from "@/types/dispute";
 import AdminDisputeStatusBadge, {
     getDisputeDecisionLabel,
@@ -59,6 +60,16 @@ export default function AdminDisputeDetailPanel({
 }) {
     const openResolve = useAdminDisputeModalStore((state) => state.openResolve);
     const openRequestEvidence = useAdminDisputeModalStore((state) => state.openRequestEvidence);
+    const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+
+    const complaintContent = useMemo(() => {
+        if (!dispute) return "";
+        return dispute.complaint?.description || dispute.reason || "";
+    }, [dispute]);
+
+    useEffect(() => {
+        setIsComplaintOpen(false);
+    }, [dispute?.disputeId]);
 
     if (isLoading) {
         return (
@@ -123,11 +134,65 @@ export default function AdminDisputeDetailPanel({
             ) : null}
 
             <div className="rounded-[10px] border border-[#E6E6E6] bg-[#FAFAFA] p-3">
-                <div className="font-bold text-[#222222]">Nội dung khiếu nại</div>
-                <p className="mt-1 whitespace-pre-line text-[13px] text-[#565959]">
-                    {dispute.complaint?.description || dispute.reason || "Không có mô tả."}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="font-bold text-[#222222]">Nội dung khiếu nại</div>
+                    <button
+                        type="button"
+                        onClick={() => setIsComplaintOpen(true)}
+                        className="shrink-0 rounded-[6px] border border-[#D5D9D9] bg-white px-3 py-1 text-[11px] font-semibold text-[#222222] hover:bg-[#F7F7F7]"
+                    >
+                        Xem
+                    </button>
+                </div>
+                <div className="mt-1 text-[13px] text-[#565959]">
+                    Nhấn <span className="font-semibold text-[#222222]">Xem</span> để mở nội dung khiếu nại.
+                </div>
             </div>
+
+            {isComplaintOpen ? (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                    onClick={() => setIsComplaintOpen(false)}
+                >
+                    <div
+                        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[12px] bg-white shadow-xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-[#E6E6E6] px-5 py-4">
+                            <div>
+                                <h2 className="text-[18px] font-bold text-[#222222]">Nội dung khiếu nại</h2>
+                                <p className="mt-1 text-[13px] text-[#565959]">Tranh chấp #{dispute.disputeId.slice(0, 8)}</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsComplaintOpen(false)}
+                                className="rounded-full p-2 hover:bg-[#F7F7F7]"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-5">
+                            <textarea
+                                value={complaintContent || "Không có mô tả."}
+                                readOnly
+                                rows={10}
+                                className="w-full resize-none rounded-[10px] border border-[#E6E6E6] bg-white p-3 text-[13px] text-[#565959] outline-none"
+                            />
+                        </div>
+
+                        <div className="flex justify-end border-t border-[#E6E6E6] px-5 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setIsComplaintOpen(false)}
+                                className="rounded-[6px] border border-[#D5D9D9] bg-white px-4 py-2 text-[13px] font-bold text-[#222222] hover:bg-[#F7F7F7]"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
             <div className="rounded-[10px] border border-[#E6E6E6] p-3">
                 <div className="font-bold text-[#222222]">Ghi chú hoàn trả</div>

@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import AdminDisputeDetailPanel from "@/components/disputes/AdminDisputeDetailPanel";
 import AdminDisputeList from "@/components/disputes/AdminDisputeList";
 import AdminResolveDisputeModal from "@/components/disputes/AdminResolveDisputeModal";
 import RequestEvidenceModal from "@/components/disputes/RequestEvidenceModal";
 import { getAdminDisputeDetail, getAdminDisputes } from "@/lib/api/admin-disputes";
-import type { AdminDispute, AdminDisputeDetail } from "@/types/dispute";
+import SimplePagination from "@/components/ui/SimplePagination";
+import AdminDisputeDetailModal from "@/components/disputes/AdminDisputeDetailModal";
+import type { AdminDispute, AdminDisputeDetail, AdminDisputePagination } from "@/types/dispute";
 
 const statusFilters = [
     { value: "ALL", label: "Tất cả" },
@@ -22,7 +23,16 @@ export default function DisputesPage() {
     const [disputes, setDisputes] = useState<AdminDispute[]>([]);
     const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(null);
     const [selectedDispute, setSelectedDispute] = useState<AdminDisputeDetail | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [status, setStatus] = useState("ALL");
+    const [page, setPage] = useState(1);
+    const [limit] = useState(20);
+    const [pagination, setPagination] = useState<AdminDisputePagination>({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 1,
+    });
     const [isLoadingList, setIsLoadingList] = useState(true);
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const [error, setError] = useState("");
@@ -37,20 +47,21 @@ export default function DisputesPage() {
         setError("");
 
         try {
-            const data = await getAdminDisputes({ status, limit: 50 });
+            const data = await getAdminDisputes({ status, page, limit });
             setDisputes(data.disputes);
+            setPagination(data.pagination);
             setSelectedDisputeId((current) => {
                 if (current && data.disputes.some((dispute) => dispute.disputeId === current)) {
                     return current;
                 }
                 return data.disputes[0]?.disputeId ?? null;
             });
-        } catch (err: any) {
-            setError(err.message || "Không thể tải tranh chấp.");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Không thể tải tranh chấp.");
         } finally {
             setIsLoadingList(false);
         }
-    }, [status]);
+    }, [limit, page, status]);
 
     const loadSelectedDispute = useCallback(async () => {
         if (!selectedDisputeId) {
@@ -62,8 +73,8 @@ export default function DisputesPage() {
         try {
             const detail = await getAdminDisputeDetail(selectedDisputeId);
             setSelectedDispute(detail);
-        } catch (err: any) {
-            setError(err.message || "Không thể tải chi tiết tranh chấp.");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Không thể tải chi tiết tranh chấp.");
         } finally {
             setIsLoadingDetail(false);
         }
@@ -71,8 +82,13 @@ export default function DisputesPage() {
 
     const refreshAll = useCallback(async () => {
         await loadDisputes();
-        await loadSelectedDispute();
+        // loadSelectedDispute will run via effect when selectedDisputeId changes
     }, [loadDisputes, loadSelectedDispute]);
+
+    const handleOpenDetail = useCallback((disputeId: string) => {
+        setSelectedDisputeId(disputeId);
+        setIsDetailOpen(true);
+    }, []);
 
     useEffect(() => {
         loadDisputes();
@@ -81,6 +97,10 @@ export default function DisputesPage() {
     useEffect(() => {
         loadSelectedDispute();
     }, [loadSelectedDispute]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [status]);
 
     return (
         <div className="animate-in slide-in-from-bottom-4 p-6 duration-500">
@@ -145,13 +165,27 @@ export default function DisputesPage() {
                         disputes={disputes}
                         selectedDisputeId={selectedDisputeId}
                         onSelect={setSelectedDisputeId}
+                        onOpenDetail={handleOpenDetail}
                     />
-                    <AdminDisputeDetailPanel dispute={selectedDispute} isLoading={isLoadingDetail} />
+                    <SimplePagination
+                        page={pagination.page}
+                        totalPages={pagination.totalPages}
+                        onPageChange={(nextPage) => {
+                            if (nextPage < 1 || nextPage > pagination.totalPages) return;
+                            setPage(nextPage);
+                        }}
+                    />
                 </div>
             )}
 
             <RequestEvidenceModal onRequested={refreshAll} />
             <AdminResolveDisputeModal onResolved={refreshAll} />
+            <AdminDisputeDetailModal
+                isOpen={isDetailOpen}
+                dispute={selectedDispute}
+                isLoading={isLoadingDetail}
+                onClose={() => setIsDetailOpen(false)}
+            />
         </div>
     );
 }

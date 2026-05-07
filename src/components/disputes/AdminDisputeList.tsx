@@ -21,12 +21,14 @@ type AdminDisputeListProps = {
     disputes: AdminDispute[];
     selectedDisputeId: string | null;
     onSelect: (disputeId: string) => void;
+    onOpenDetail: (disputeId: string) => void;
 };
 
 export default function AdminDisputeList({
     disputes,
     selectedDisputeId,
     onSelect,
+    onOpenDetail,
 }: AdminDisputeListProps) {
     return (
         <div className="h-fit overflow-x-auto rounded-[12px] border border-[#E6E6E6] bg-white shadow-sm">
@@ -65,7 +67,10 @@ export default function AdminDisputeList({
                             <td className="p-4">
                                 <button
                                     type="button"
-                                    onClick={() => onSelect(dispute.disputeId)}
+                                    onClick={() => {
+                                        onSelect(dispute.disputeId);
+                                        onOpenDetail(dispute.disputeId);
+                                    }}
                                     className="rounded-[6px] bg-[#232F3E] px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-black"
                                 >
                                     Xem
