@@ -122,7 +122,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
               "Authorization": `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
-              fullName: session.user.user_metadata?.full_name || session.user.email,
+              fullName:
+                session.user.user_metadata?.full_name ||
+                session.user.user_metadata?.name ||
+                session.user.user_metadata?.fullName ||
+                undefined,
               phoneNumber: pendingPhone,
             }),
           }).then(() => fetchProfile(session));

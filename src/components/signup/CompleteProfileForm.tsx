@@ -18,7 +18,15 @@ export default function CompleteProfileForm() {
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.full_name || "");
+      const rawFullName = (profile.full_name || "").trim();
+      const profileEmail = (profile.email || "").trim().toLowerCase();
+      const authEmail = (user?.email || "").trim().toLowerCase();
+      const looksLikeEmail = rawFullName.includes("@");
+      const isSameAsEmail =
+        (profileEmail && rawFullName.toLowerCase() === profileEmail) ||
+        (authEmail && rawFullName.toLowerCase() === authEmail);
+
+      setFullName(looksLikeEmail && isSameAsEmail ? "" : rawFullName);
       setEmail(profile.email || user?.email || "");
       setIdCard(profile.id_number || "");
     } else if (user) {
@@ -112,7 +120,7 @@ export default function CompleteProfileForm() {
 
           <div className="mb-4 flex flex-col gap-1.5">
             <label htmlFor="email" className="text-[14px] font-medium text-[#222222]">
-              Email (Không bắt buộc)
+              Email
             </label>
             <input
               id="email"

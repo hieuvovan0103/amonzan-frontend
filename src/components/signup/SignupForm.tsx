@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import PhoneOtpDialog from "@/components/signup/PhoneOtpDialog";
 import { fetchWithAuth } from "@/lib/apiClient";
 import { normalizePhoneNumber } from "@/lib/phone";
@@ -43,6 +41,7 @@ function mapSignupError(message?: string) {
 export default function SignupForm() {
   const [identifier, setIdentifier] = useState(""); // Email or Phone
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
   // For OTP mode if needed
   const [mobile, setMobile] = useState("");
@@ -78,6 +77,12 @@ export default function SignupForm() {
 
     if (!normalizedIdentifier) {
         setSubmitError("Vui lòng nhập email hoặc số điện thoại.");
+        setIsSubmitting(false);
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        setSubmitError("Mật khẩu xác nhận không khớp.");
         setIsSubmitting(false);
         return;
     }
@@ -176,6 +181,24 @@ export default function SignupForm() {
                         className="w-full rounded-[12px] border border-[#D5D9D9] px-3 py-2 text-[14px] text-[#222222] shadow-[0_1px_2px_rgba(15,17,17,0.05)] outline-none transition-all focus:border-[#FF9900] focus:ring-[3px] focus:ring-[#FF9900]/22"
                       />
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                      <label htmlFor="confirm_password" className="text-[14px] font-medium text-[#222222]">
+                        Xác nhận mật khẩu
+                      </label>
+                      <input
+                        id="confirm_password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Nhập lại mật khẩu"
+                        required
+                        minLength={6}
+                        className="w-full rounded-[12px] border border-[#D5D9D9] px-3 py-2 text-[14px] text-[#222222] shadow-[0_1px_2px_rgba(15,17,17,0.05)] outline-none transition-all focus:border-[#FF9900] focus:ring-[3px] focus:ring-[#FF9900]/22"
+                      />
+                      {confirmPassword && password !== confirmPassword ? (
+                        <div className="text-[12px] font-medium text-[#C62828]">Mật khẩu xác nhận không khớp.</div>
+                      ) : null}
+                  </div>
                 </div>
 
             {submitError && (
@@ -195,7 +218,7 @@ export default function SignupForm() {
               disabled={isSubmitting}
               className="mt-2 w-full rounded-[10px] border border-[#F0C14B] bg-[#FFD814] py-2.5 text-[14px] font-semibold text-[#111111] shadow-sm transition-colors hover:bg-[#F0C14B] disabled:border-[#D5D9D9] disabled:bg-[#F7F7F7] disabled:text-[#9B9B9B]"
             >
-              Tiếp tục
+              Tạo tài khoản
             </button>
           </form>
 
@@ -226,7 +249,7 @@ export default function SignupForm() {
                       <div className="w-full border-t border-[#E6E6E6]"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                      <span className="bg-white px-2 text-[12px] text-[#565959]">Hoặc đăng nhập bằng</span>
+                      <span className="bg-white px-2 text-[12px] text-[#565959]">Hoặc tiếp tục với</span>
                   </div>
               </div>
 
@@ -268,18 +291,6 @@ export default function SignupForm() {
                     Đăng nhập
                   </button>
                 </p>
-                
-                <div className="mt-4">
-                  <p className="text-[13px] font-medium text-[#222222] mb-1">
-                    Bạn muốn cho thuê đồ trên Amonzan?
-                  </p>
-                  <Link
-                    href="/vendor/register"
-                    className="text-[13px] font-medium text-[#007185] hover:text-[#E47911] hover:underline inline-flex items-center"
-                  >
-                    Đăng ký trở thành Đối tác Vendor <ChevronRight className="w-4 h-4 ml-0.5" />
-                  </Link>
-                </div>
               </div>
             </div>
           </div>

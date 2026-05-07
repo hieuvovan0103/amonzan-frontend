@@ -166,7 +166,7 @@ export default function LoginModal() {
                   </label>
 
                   <a
-                    href="#"
+                    href="/forgot-password"
                     className="text-[12px] text-[#007185] hover:text-[#E47911] hover:underline font-medium"
                   >
                     Quên mật khẩu?
