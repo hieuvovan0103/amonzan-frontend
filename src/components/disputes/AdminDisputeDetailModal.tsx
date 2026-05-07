@@ -15,7 +15,7 @@ export default function AdminDisputeDetailModal({ isOpen, dispute, isLoading, on
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
             <div
                 className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[12px] bg-white shadow-xl"
                 onClick={(event) => event.stopPropagation()}
