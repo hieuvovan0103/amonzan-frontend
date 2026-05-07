@@ -16,7 +16,7 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
         0,
     );
     const availableStock = product.variants.reduce(
-        (total, variant) => total + Number(variant.total_stock ?? 0),
+        (total, variant) => total + Number(variant.available_stock ?? 0),
         0,
     );
     const sizeNames = product.availableSizes

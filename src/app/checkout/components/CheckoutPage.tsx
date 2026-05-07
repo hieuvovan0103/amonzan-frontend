@@ -257,7 +257,11 @@ export default function CheckoutPage() {
     };
 
     const handleUpdateQuantity = (id: string, quantity: number) => {
-        const nextQuantity = Math.max(1, quantity);
+        const currentItem = effectiveItems.find((item) => item.id === id);
+        const maxQuantity = currentItem?.availableStock && currentItem.availableStock > 0
+            ? currentItem.availableStock
+            : undefined;
+        const nextQuantity = Math.min(Math.max(1, quantity), maxQuantity ?? Math.max(1, quantity));
         updateQuantity(id, nextQuantity);
         setStorageCartItems((currentItems) =>
             currentItems
@@ -299,6 +303,14 @@ export default function CheckoutPage() {
         setIsPlacingOrder(true);
 
         try {
+            const latestStockIssues = await getCartStockIssues(selectedItems);
+            setStockIssues(latestStockIssues);
+
+            if (latestStockIssues.length > 0) {
+                router.push(buildFailureUrl(latestStockIssues.map((issue) => issue.message).join(" ")));
+                return;
+            }
+
             const orderResponse = await fetchWithAuth("/orders", {
                 method: "POST",
                 body: JSON.stringify({

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, CalendarDays, Loader2, PackageCheck } from "lucide-react";
+import { AlertTriangle, CalendarDays, Loader2, MessageSquarePlus, PackageCheck } from "lucide-react";
 import { confirmRenterReceived, type PaidOrder } from "@/lib/api/orders";
+import { reportReview } from "@/lib/api/reviews";
 import { useEarlyReturnModalStore } from "@/stores/useEarlyReturnModalStore";
 import { useReturnModalStore } from "@/stores/returnModalStore";
 import { useReturnComplaintModalStore } from "@/stores/returnComplaintModalStore";
@@ -70,6 +71,7 @@ function getEarlyReturnStatusLabel(status: string) {
 
 export default function OrderCard({ order, onChanged }: OrderCardProps) {
     const [isConfirmingReceived, setIsConfirmingReceived] = useState(false);
+    const [isReportingReview, setIsReportingReview] = useState(false);
     const [actionError, setActionError] = useState("");
     const openEarlyReturnModal = useEarlyReturnModalStore((state) => state.open);
     const openReturnModal = useReturnModalStore((state) => state.open);
@@ -87,6 +89,7 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
     const canComplainReturnResult =
         ["CONFIRMED", "ISSUE_REPORTED"].includes(order.returnRecord?.vendorReturnStatus ?? "") ||
         order.status === "DISPUTED";
+    const canReviewProducts = order.status === "COMPLETED";
 
     const handleConfirmReceived = async () => {
         setIsConfirmingReceived(true);
@@ -99,6 +102,25 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
             setActionError(error.message || "Không thể xác nhận đã nhận hàng.");
         } finally {
             setIsConfirmingReceived(false);
+        }
+    };
+
+    const handleReportRenterReview = async () => {
+        if (!order.renterReview) return;
+
+        const reason = window.prompt("Nhập lý do báo cáo đánh giá này:");
+        if (!reason?.trim()) return;
+
+        setIsReportingReview(true);
+        setActionError("");
+
+        try {
+            await reportReview(order.renterReview.reviewId, reason.trim());
+            await onChanged?.();
+        } catch (error: any) {
+            setActionError(error.message || "Không thể báo cáo đánh giá.");
+        } finally {
+            setIsReportingReview(false);
         }
     };
 
@@ -171,7 +193,7 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
 
                 <div className="divide-y divide-[#E6E6E6] rounded-[8px] border border-[#E6E6E6]">
                     {order.items.map((item) => (
-                        <div key={item.orderItemId} className="flex gap-3 p-3 sm:gap-4 sm:p-4">
+                        <div key={item.orderItemId} className="flex flex-col gap-3 p-3 sm:flex-row sm:gap-4 sm:p-4">
                             <div className="h-[84px] w-[84px] flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E6E6E6] bg-[#F7F7F7]">
                                 <img
                                     src={item.productImage ?? "/file.svg"}
@@ -207,9 +229,45 @@ export default function OrderCard({ order, onChanged }: OrderCardProps) {
                                     <span>Thành tiền: <strong className="text-[#B12704]">{formatCurrency(item.lineSubtotal)} đ</strong></span>
                                 </div>
                             </div>
+
+                            {canReviewProducts && item.productSlug ? (
+                                <div className="flex flex-shrink-0 items-start sm:justify-end">
+                                    <Link
+                                        href={`/products/${item.productSlug}#danh-gia`}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#FF9900] bg-[#FFD814] px-4 py-2 text-[13px] font-bold text-[#222222] hover:bg-[#F7CA00] sm:w-auto"
+                                    >
+                                        <MessageSquarePlus className="h-4 w-4" />
+                                        Đánh giá
+                                    </Link>
+                                </div>
+                            ) : null}
                         </div>
                     ))}
                 </div>
+
+                {order.renterReview ? (
+                    <div className="mt-4 rounded-[6px] border border-[#E6E6E6] bg-[#FAFAFA] p-3 text-[13px]">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <div className="font-bold text-[#222222]">Đánh giá từ shop {order.renterReview.shopName}</div>
+                                <div className="mt-1 flex items-center gap-1 font-bold text-[#B12704]">
+                                    {order.renterReview.rating}/5 <span className="text-[#FFA41C]">★</span>
+                                </div>
+                                {order.renterReview.comment ? (
+                                    <p className="mt-1 text-[#565959]">{order.renterReview.comment}</p>
+                                ) : null}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleReportRenterReview}
+                                disabled={isReportingReview || order.renterReview.reportStatus === "PENDING"}
+                                className="rounded-[4px] border border-[#F5C2C7] bg-white px-3 py-2 text-[12px] font-bold text-[#842029] hover:bg-[#FFF5F5] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {order.renterReview.reportStatus === "PENDING" ? "Đã báo cáo" : "Báo cáo"}
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
 
                 {actionError ? (
                     <div className="mt-4 flex items-start gap-2 rounded-[6px] border border-red-100 bg-red-50 px-3 py-3 text-[13px] font-semibold text-[#842029]">

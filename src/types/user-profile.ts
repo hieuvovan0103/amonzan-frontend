@@ -2,6 +2,7 @@ export type ProfileTab =
     | 'profile'
     | 'notifications'
     | 'my_orders'
+    | 'my_reviews'
     | 'favorites'
     | 'payments'
     | 'addresses';

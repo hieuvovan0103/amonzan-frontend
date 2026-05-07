@@ -1,6 +1,8 @@
 "use client";
 
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { useAuthModal } from "@/stores/useAuthModal";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -11,8 +13,41 @@ import MobileMenuButton from "@/components/layout/MobileMenuButton";
 import MobileMenuDrawer from "@/components/layout/MobileMenuDrawer";
 
 export default function Navbar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState("");
   const openLogin = useAuthModal((state) => state.openLogin);
   const { user, profile, isInitialized, isSyncing, signOut } = useAuthStore();
+
+  useEffect(() => {
+    setSearchTerm(
+      pathname === "/products"
+        ? searchParams.get("search") || searchParams.get("keyword") || ""
+        : "",
+    );
+  }, [pathname, searchParams]);
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const keyword = searchTerm.trim();
+    const params = pathname === "/products"
+      ? new URLSearchParams(searchParams.toString())
+      : new URLSearchParams();
+
+    params.delete("keyword");
+
+    if (keyword) {
+      params.set("search", keyword);
+    } else {
+      params.delete("search");
+    }
+
+    params.delete("page");
+    const query = params.toString();
+    router.push(query ? `/products?${query}` : "/products");
+  };
 
   const userRoles =
     profile?.user_roles
@@ -51,19 +86,25 @@ export default function Navbar() {
           </div>
 
           <div className="hidden max-w-3xl flex-1 items-center gap-6 md:flex">
-            <div className="flex w-full overflow-hidden rounded-sm border border-gray-300 bg-white transition-all focus-within:border-[#FF9900] focus-within:ring-1 focus-within:ring-[#FF9900]">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex w-full overflow-hidden rounded-sm border border-gray-300 bg-white transition-all focus-within:border-[#FF9900] focus-within:ring-1 focus-within:ring-[#FF9900]"
+            >
               <input
                 type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Tìm kiếm trang phục, đạo cụ, đồ cho thuê..."
                 className="flex-1 px-4 py-2 text-[14px] text-[#222222] outline-none"
               />
               <button
-                type="button"
+                type="submit"
+                aria-label="Tìm kiếm"
                 className="flex items-center justify-center bg-[#FF9900] px-6 transition-colors hover:bg-[#E47911]"
               >
                 <Search className="h-5 w-5 text-[#111111]" />
               </button>
-            </div>
+            </form>
           </div>
 
           <div className="flex flex-shrink-0 items-center gap-3 text-[14px] font-semibold">

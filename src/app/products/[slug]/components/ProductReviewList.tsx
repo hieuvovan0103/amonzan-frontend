@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProductReview } from "@/lib/api/products";
+import { reportReview } from "@/lib/api/reviews";
 import ProductReviewStars from "./ProductReviewStars";
 
 type ProductReviewListProps = {
@@ -16,6 +17,13 @@ function formatDate(value: string) {
 }
 
 export default function ProductReviewList({ reviews }: ProductReviewListProps) {
+    const handleReport = async (reviewId: string) => {
+        const reason = window.prompt("Nhập lý do báo cáo đánh giá này:");
+        if (!reason?.trim()) return;
+        await reportReview(reviewId, reason.trim());
+        window.alert("Đã gửi báo cáo đánh giá đến admin.");
+    };
+
     if (reviews.length === 0) {
         return (
             <div className="rounded-[6px] border border-dashed border-[#D5D9D9] bg-[#F7F7F7] px-5 py-8 text-center">
@@ -60,6 +68,13 @@ export default function ProductReviewList({ reviews }: ProductReviewListProps) {
                             Người thuê không để lại nhận xét.
                         </p>
                     )}
+                    <button
+                        type="button"
+                        onClick={() => handleReport(review.id)}
+                        className="mt-3 text-[12px] font-semibold text-[#842029] hover:underline"
+                    >
+                        Báo cáo đánh giá
+                    </button>
                 </article>
             ))}
         </div>

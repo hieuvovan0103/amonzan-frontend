@@ -173,6 +173,10 @@ export async function getPublicProducts(params?: {
   page?: number;
   limit?: number;
   categorySlug?: string;
+  search?: string;
+  province?: string;
+  minPrice?: number;
+  maxPrice?: number;
   sort?: "newest" | "price_asc" | "price_desc" | "rating_desc";
 }): Promise<ProductListResult> {
   let res: Response;
@@ -247,12 +251,12 @@ export async function getPublicProductDetail(
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((image) => image.image_url);
   const availableVariants = (product.product_variants ?? []).filter(
-    (variant) => Number(variant.total_stock) > 0,
+    (variant) => Number(variant.available_stock ?? 0) > 0,
   );
   const availableSizes = availableVariants.map((variant) => ({
     variantId: variant.variant_id,
     name: variant.variant_name,
-    availableStock: Number(variant.total_stock ?? variant.available_stock ?? 0),
+    availableStock: Number(variant.available_stock ?? 0),
     priceValue: Number(variant.base_daily_rate ?? 0),
   }));
   const pricedVariants = availableVariants.length

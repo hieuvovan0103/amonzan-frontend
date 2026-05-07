@@ -9,9 +9,21 @@ import ReturnRequestModal from "@/components/returns/ReturnRequestModal";
 import ReturnComplaintModal from "@/components/returns/ReturnComplaintModal";
 import EarlyReturnComplaintModal from "@/components/returns/EarlyReturnComplaintModal";
 
+const ORDER_STATUS_FILTERS = [
+    { value: "ALL", label: "Tất cả trạng thái" },
+    { value: "PENDING", label: "Chờ xử lý" },
+    { value: "CONFIRMED", label: "Đã xác nhận" },
+    { value: "IN_RENTAL", label: "Đang thuê" },
+    { value: "COMPLETED", label: "Hoàn tất" },
+    { value: "CANCELLED", label: "Đã hủy" },
+    { value: "LATE", label: "Quá hạn" },
+    { value: "DISPUTED", label: "Tranh chấp" },
+];
+
 export default function MyOrdersView() {
     const [orders, setOrders] = useState<PaidOrder[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("ALL");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -44,9 +56,14 @@ export default function MyOrdersView() {
 
     const filteredOrders = useMemo(() => {
         const keyword = searchTerm.trim().toLowerCase();
-        if (!keyword) return orders;
 
         return orders.filter((order) => {
+            if (statusFilter !== "ALL" && order.status !== statusFilter) {
+                return false;
+            }
+
+            if (!keyword) return true;
+
             const orderText = [
                 order.orderId,
                 order.status,
@@ -59,7 +76,7 @@ export default function MyOrdersView() {
 
             return orderText.includes(keyword);
         });
-    }, [orders, searchTerm]);
+    }, [orders, searchTerm, statusFilter]);
 
     return (
         <section className="rounded-[8px] border border-[#E6E6E6] bg-white">
@@ -71,7 +88,8 @@ export default function MyOrdersView() {
                             Theo dõi đơn thuê, trả hàng và khiếu nại liên quan.
                         </p>
                     </div>
-                    <div className="relative w-full md:max-w-[360px]">
+                    <div className="grid w-full gap-3 md:max-w-[560px] md:grid-cols-[1fr_180px]">
+                        <div className="relative">
                         <input
                             type="text"
                             value={searchTerm}
@@ -80,6 +98,18 @@ export default function MyOrdersView() {
                             className="w-full rounded-[4px] border border-[#D5D9D9] py-2.5 pl-9 pr-3 text-[14px] outline-none transition-all focus:border-[#FF9900] focus:ring-2 focus:ring-[#FF9900]/30"
                         />
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
+                        </div>
+                        <select
+                            value={statusFilter}
+                            onChange={(event) => setStatusFilter(event.target.value)}
+                            className="w-full rounded-[4px] border border-[#D5D9D9] bg-white px-3 py-2.5 text-[14px] outline-none transition-all focus:border-[#FF9900] focus:ring-2 focus:ring-[#FF9900]/30"
+                        >
+                            {ORDER_STATUS_FILTERS.map((filter) => (
+                                <option key={filter.value} value={filter.value}>
+                                    {filter.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>

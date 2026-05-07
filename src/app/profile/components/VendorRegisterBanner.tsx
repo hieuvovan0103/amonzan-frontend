@@ -13,16 +13,16 @@ export default function VendorRegisterBanner() {
     const router = useRouter();
 
     return (
-        <div className="mb-10 bg-gradient-to-r from-[#FFF8E1] to-[#FFF3CD] border border-[#F0C14B] rounded-[16px] p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 shadow-[0_4px_12px_rgba(255,153,0,0.08)]">
-            <div className="flex gap-4 items-start">
+        <div className="mb-8 flex min-w-0 flex-col gap-4 rounded-[8px] border border-[#F0C14B] bg-gradient-to-r from-[#FFF8E1] to-[#FFF3CD] p-4 shadow-[0_4px_12px_rgba(255,153,0,0.08)] sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:p-6">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                 <div className="w-12 h-12 bg-[#FF9900] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                     <Store className="w-6 h-6" />
                 </div>
 
-                <div>
-                    <h3 className="text-[16px] sm:text-[18px] font-bold text-[#222222] flex items-center gap-2 mb-1.5">
+                <div className="min-w-0">
+                    <h3 className="mb-1.5 flex min-w-0 items-center gap-2 text-[16px] font-bold leading-snug text-[#222222] sm:text-[18px]">
                         Trở thành đối tác cho thuê
-                        <Sparkles className="w-4 h-4 text-[#E47911]" />
+                        <Sparkles className="w-4 h-4 flex-shrink-0 text-[#E47911]" />
                     </h3>
 
                     <p className="text-[13px] text-[#565959] leading-[1.5] max-w-md">
@@ -46,7 +46,7 @@ export default function VendorRegisterBanner() {
 
             <button
                 onClick={() => router.push('/vendor/register')}
-                className="w-full sm:w-auto bg-[#FFD814] hover:bg-[#F0C14B] border border-[#F0C14B] text-[#111111] font-bold text-[14px] px-6 py-3 rounded-[10px] transition-colors shadow-sm flex items-center justify-center gap-2"
+                className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-[4px] border border-[#F0C14B] bg-[#FFD814] px-5 py-3 text-[14px] font-bold text-[#111111] shadow-sm transition-colors hover:bg-[#F0C14B] sm:w-auto"
             >
                 Đăng ký gian hàng
                 <ChevronRight className="w-4 h-4" />

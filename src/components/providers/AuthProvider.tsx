@@ -99,10 +99,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, [fetchProfile, setAuth]);
 
   useEffect(() => {
+    let isMounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
     // Lắng nghe các event đăng nhập, đăng xuất, token refresh
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const handleAuthChange = (event: string, session: Session | null) => {
+      if (!isMounted) return;
+
       console.log('✅ [AuthProvider] Sự kiện cập nhật trạng thái:', event);
       if (session) {
         console.log('✅ [AuthProvider] Đã lấy được Session hợp lệ cho:', session.user.email);
@@ -132,9 +134,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         useAuthStore.getState().setProfile(null);
       }
       setAuth(session, session?.user || null);
-    });
+    };
 
-    syncAuthFromSupabase();
+    syncAuthFromSupabase().then(() => {
+      if (!isMounted) return;
+
+      const result = supabase.auth.onAuthStateChange(handleAuthChange);
+      subscription = result.data.subscription;
+      void supabase.auth.startAutoRefresh();
+    });
 
     const handlePageShow = () => {
       syncAuthFromSupabase();
@@ -155,7 +163,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     window.addEventListener("focus", handleFocus);
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
+      subscription?.unsubscribe();
+      void supabase.auth.stopAutoRefresh();
       window.removeEventListener("pageshow", handlePageShow);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);

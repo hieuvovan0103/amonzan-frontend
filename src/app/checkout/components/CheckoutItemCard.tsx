@@ -20,6 +20,8 @@ export default function CheckoutItemCard({
 }: CheckoutItemCardProps) {
     const rentalDays = getRentalDays(item);
     const totalRent = getItemRentTotal(item);
+    const maxQuantity = stockIssue?.availableStock ?? item.availableStock;
+    const canIncrease = !maxQuantity || item.quantity < maxQuantity;
 
     return (
         <article className="flex flex-col gap-4 p-4 sm:flex-row">
@@ -79,7 +81,8 @@ export default function CheckoutItemCard({
                                 <button
                                     type="button"
                                     onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6]"
+                                    disabled={!canIncrease}
+                                    className="h-8 w-8 text-[18px] font-semibold text-[#222222] transition-colors hover:bg-[#E6E6E6] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                                     aria-label="Tăng số lượng"
                                 >
                                     +

@@ -39,7 +39,7 @@ export async function getCartStockIssues(
                 ? candidate.variant_id === item.variantId
                 : candidate.variant_name === item.size,
         );
-        let availableStock = Number(variant?.total_stock ?? variant?.available_stock ?? 0);
+        let availableStock = Number(variant?.available_stock ?? 0);
 
         if (!product && options.failOpen) {
             continue;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -19,7 +20,11 @@ export default function ClientLayout({
 
     return (
         <>
-            {!hideGlobalNavAndFooter && <Navbar />}
+            {!hideGlobalNavAndFooter && (
+                <Suspense fallback={<div className="h-[64px] bg-[#232F3E]" />}>
+                    <Navbar />
+                </Suspense>
+            )}
             <main className="flex-1 min-h-screen bg-[#F7F7F7] md:bg-white">{children}</main>
             {!hideGlobalNavAndFooter && <Footer />}
             <PhoneVerificationGate />

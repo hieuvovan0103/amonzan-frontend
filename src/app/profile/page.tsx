@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import AddressBookView from "./components/AddressBookView";
 import FavoritesView from "./components/FavoritesView";
 import MyOrdersView from "./components/MyOrdersView";
+import MyRenterReviewsView from "./components/MyRenterReviewsView";
 import NotificationsView from "./components/NotificationsView";
 import PaymentMethodsView from "./components/PaymentMethodsView";
 import ProfileInfoView from "./components/ProfileInfoView";
@@ -16,6 +17,7 @@ import ProfileSidebar from "./components/ProfileSidebar";
 const VALID_TABS: ProfileTab[] = [
     "profile",
     "my_orders",
+    "my_reviews",
     "favorites",
     "notifications",
     "addresses",
@@ -78,6 +80,8 @@ export default function ProfilePage() {
                 return <NotificationsView />;
             case "my_orders":
                 return <MyOrdersView />;
+            case "my_reviews":
+                return <MyRenterReviewsView />;
             case "favorites":
                 return <FavoritesView />;
             case "payments":
@@ -91,36 +95,36 @@ export default function ProfilePage() {
     };
 
     return (
-        <main className="min-h-screen bg-[#F3F4F6]">
-            <div className="mx-auto w-full max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
+        <main className="min-h-screen overflow-x-hidden bg-[#F3F4F6]">
+            <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 sm:py-5 md:px-8 md:py-8">
                 <section className="mb-5 overflow-hidden rounded-[8px] border border-[#D5D9D9] bg-white shadow-sm">
-                    <div className="bg-[#232F3E] px-5 py-5 text-white md:px-6">
+                    <div className="bg-[#232F3E] px-4 py-5 text-white sm:px-5 md:px-6">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div className="flex min-w-0 items-center gap-4">
+                            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                                 {avatarUrl ? (
                                     <img
                                         src={avatarUrl}
                                         alt="Ảnh đại diện"
-                                        className="h-16 w-16 rounded-full border-2 border-white/40 object-cover"
+                                        className="h-14 w-14 flex-shrink-0 rounded-full border-2 border-white/40 object-cover sm:h-16 sm:w-16"
                                     />
                                 ) : (
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FF9900] text-[22px] font-bold text-[#111111]">
+                                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-[#FF9900] text-[20px] font-bold text-[#111111] sm:h-16 sm:w-16 sm:text-[22px]">
                                         {getInitials(displayName) || "A"}
                                     </div>
                                 )}
 
                                 <div className="min-w-0">
-                                    <h1 className="truncate text-[22px] font-bold tracking-[-0.01em]">
+                                    <h1 className="truncate text-[20px] font-bold tracking-[-0.01em] sm:text-[22px]">
                                         {displayName}
                                     </h1>
                                     <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-white/80">
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <Mail className="h-4 w-4" />
-                                            {email}
+                                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                                            <Mail className="h-4 w-4 flex-shrink-0" />
+                                            <span className="truncate">{email}</span>
                                         </span>
                                         {profile?.is_phone_verified ? (
-                                            <span className="inline-flex items-center gap-1.5 text-[#7DDC8A]">
-                                                <ShieldCheck className="h-4 w-4" />
+                                            <span className="inline-flex min-w-0 items-center gap-1.5 text-[#7DDC8A]">
+                                                <ShieldCheck className="h-4 w-4 flex-shrink-0" />
                                                 Số điện thoại đã xác thực
                                             </span>
                                         ) : null}
@@ -128,13 +132,13 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 md:min-w-[360px]">
+                            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 md:min-w-[360px]">
                                 {profileStats.map((item) => (
-                                    <div key={item.label} className="rounded-[6px] bg-white/10 px-3 py-2">
+                                    <div key={item.label} className="min-w-0 rounded-[6px] bg-white/10 px-3 py-2">
                                         <div className="text-[11px] uppercase tracking-wide text-white/60">
                                             {item.label}
                                         </div>
-                                        <div className="mt-1 text-[12px] font-bold text-white">
+                                        <div className="mt-1 text-[12px] font-bold text-white min-[420px]:line-clamp-2">
                                             {item.value}
                                         </div>
                                     </div>

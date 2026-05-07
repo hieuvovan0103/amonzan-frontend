@@ -10,6 +10,7 @@ import type {
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { calculateRentalDays } from "@/lib/rental-days";
 
 type BuyBoxProps = {
     product: ProductDetail;
@@ -45,8 +46,13 @@ export default function BuyBox({
     const addItem = useCartStore((state) => state.addItem);
     const showToast = useToastStore((state) => state.show);
     const isOutOfStock = !selectedSize || selectedSize.availableStock <= 0;
+    const effectiveAvailableStock = availability?.availableStock ?? selectedSize?.availableStock;
     const selectedPriceValue = selectedSize?.priceValue ?? product.priceValue;
     const selectedPrice = formatPrice(selectedPriceValue);
+    const rentalDays = calculateRentalDays(rentalStart, rentalEnd);
+    const displayedPrice = rentalDays > 0
+        ? formatPrice(selectedPriceValue * rentalDays)
+        : selectedPrice;
     const selectedSizeName = selectedSize?.name ?? product.sizes[0] ?? "Mặc định";
     const shouldShowSelectedSize = selectedSizeName.trim().toLowerCase() !== "mặc định";
     const hasRentalDates = Boolean(rentalStart && rentalEnd);
@@ -94,6 +100,7 @@ export default function BuyBox({
             rentDates,
             rentalStart,
             rentalEnd,
+            rentalDays: rentalDays || undefined,
             pricePerDay: selectedPrice,
             size: selectedSizeName,
             color: "Mặc định",
@@ -101,7 +108,7 @@ export default function BuyBox({
             image: product.images[0] ?? "/file.svg",
             shopId: product.shopId,
             shopName: storeName,
-            availableStock: selectedSize?.availableStock,
+            availableStock: effectiveAvailableStock,
         });
         showToast(
             shouldShowSelectedSize
@@ -129,10 +136,20 @@ export default function BuyBox({
         <div className="border border-[#E6E6E6] rounded-[6px] p-5 shadow-[0_1px_2px_rgba(15,17,17,0.06),_0_4px_14px_rgba(15,17,17,0.05)] bg-white sticky top-[90px]">
             <div className="flex items-baseline gap-1 mb-2">
                 <span className="text-[28px] font-bold text-[#C62828] leading-none">
-                    {selectedPrice}
+                    {displayedPrice}
                 </span>
                 <span className="text-[14px] font-bold text-[#C62828]">vnđ</span>
             </div>
+
+            {rentalDays > 0 && (
+                <p className="mb-3 text-[13px] text-[#565959]">
+                    {"T\u1ed5ng ti\u1ec1n thu\u00ea "}
+                    {rentalDays}
+                    {" ng\u00e0y \u00b7 "}
+                    {selectedPrice}
+                    {" vn\u0111/ng\u00e0y"}
+                </p>
+            )}
 
             {selectedSize && shouldShowSelectedSize && (
                 <div className="mb-3 text-[13px] text-[#565959]">

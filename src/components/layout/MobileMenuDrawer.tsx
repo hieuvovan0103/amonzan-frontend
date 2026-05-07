@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   ClipboardList,
@@ -12,6 +13,7 @@ import {
   LogIn,
   LogOut,
   PackageSearch,
+  Search,
   ShieldCheck,
   ShoppingCart,
   Store,
@@ -51,9 +53,13 @@ function getShopProfiles(profile: any | null) {
 }
 
 export default function MobileMenuDrawer() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isOpen, closeMenu } = useMobileMenuStore();
   const openLogin = useAuthModal((state) => state.openLogin);
   const { user, profile, signOut } = useAuthStore();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const userRoles = getUserRoles(profile);
   const shopProfiles = getShopProfiles(profile);
@@ -61,6 +67,14 @@ export default function MobileMenuDrawer() {
   const isVendor =
     (userRoles.includes("SHOP_OWNER") || userRoles.includes("VENDOR")) &&
     shopProfiles.some((shopProfile: any) => shopProfile?.verification_status === "VERIFIED");
+
+  useEffect(() => {
+    setSearchTerm(
+      pathname === "/products"
+        ? searchParams.get("search") || searchParams.get("keyword") || ""
+        : "",
+    );
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -115,6 +129,28 @@ export default function MobileMenuDrawer() {
     await signOut();
   };
 
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const keyword = searchTerm.trim();
+    const params = pathname === "/products"
+      ? new URLSearchParams(searchParams.toString())
+      : new URLSearchParams();
+
+    params.delete("keyword");
+
+    if (keyword) {
+      params.set("search", keyword);
+    } else {
+      params.delete("search");
+    }
+
+    params.delete("page");
+    closeMenu();
+    const query = params.toString();
+    router.push(query ? `/products?${query}` : "/products");
+  };
+
   return (
     <div className="fixed inset-0 z-[80] md:hidden" role="dialog" aria-modal="true">
       <button
@@ -144,6 +180,25 @@ export default function MobileMenuDrawer() {
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        <form onSubmit={handleSearchSubmit} className="border-b border-[#E6E6E6] p-5">
+          <div className="flex overflow-hidden rounded-[4px] border border-[#D5D9D9] bg-white focus-within:border-[#FF9900] focus-within:ring-2 focus-within:ring-[#FF9900]/20">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Tìm sản phẩm..."
+              className="min-w-0 flex-1 px-3 py-2.5 text-[14px] outline-none"
+            />
+            <button
+              type="submit"
+              aria-label="Tìm kiếm"
+              className="flex w-12 items-center justify-center bg-[#FF9900] text-[#111111]"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
+        </form>
 
         <nav className="flex-1 overflow-y-auto py-3">
           {links.map((item) => {

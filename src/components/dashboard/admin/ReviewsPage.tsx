@@ -156,6 +156,11 @@ export default function ReviewsPage() {
                                                 Không có nhận xét
                                             </span>
                                         )}
+                                        {review.report_status === "PENDING" ? (
+                                            <div className="mt-2 rounded-[4px] border border-[#F5C2C7] bg-[#FFF5F5] px-2 py-1 text-[12px] font-semibold text-[#842029]">
+                                                Báo cáo: {review.report_reason || "Không có lý do"}
+                                            </div>
+                                        ) : null}
                                     </td>
                                     <td className="p-4 text-[#565959]">{formatDate(review.created_at)}</td>
                                     <td className="p-4 text-center">

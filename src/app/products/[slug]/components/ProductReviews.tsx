@@ -11,6 +11,7 @@ import {
     createProductReview,
     getProductReviewEligibility,
     getProductReviews,
+    updateMyProductReview,
 } from "@/lib/api/reviews";
 import { useAuthModal } from "@/stores/useAuthModal";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -48,6 +49,7 @@ export default function ProductReviews({ product }: ProductReviewsProps) {
     const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [editingReview, setEditingReview] = useState<ProductReview | null>(null);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
@@ -70,6 +72,7 @@ export default function ProductReviews({ product }: ProductReviewsProps) {
             const eligibility = await getProductReviewEligibility(product.id);
             if (!eligibility.eligible) {
                 setShowForm(false);
+                setEditingReview(null);
                 setMessage(
                     eligibility.message ||
                         "Bạn chỉ có thể đánh giá sản phẩm sau khi hoàn tất đơn thuê.",
@@ -77,8 +80,9 @@ export default function ProductReviews({ product }: ProductReviewsProps) {
                 return;
             }
 
+            setEditingReview(eligibility.alreadyReviewed ? eligibility.review : null);
             setShowForm(true);
-            setMessage("");
+            setMessage(eligibility.alreadyReviewed ? "Bạn đang chỉnh sửa đánh giá đã gửi." : "");
         } catch (err: any) {
             setError(err.message || "Không thể kiểm tra quyền đánh giá.");
         } finally {
@@ -91,11 +95,16 @@ export default function ProductReviews({ product }: ProductReviewsProps) {
         setIsSubmitting(true);
 
         try {
-            await createProductReview(product.id, payload);
+            if (editingReview) {
+                await updateMyProductReview(product.id, payload);
+            } else {
+                await createProductReview(product.id, payload);
+            }
             const refreshed = await getProductReviews(product.id);
             setReviews(refreshed.reviews);
             setShowForm(false);
-            setMessage("Bạn đã đánh giá sản phẩm này.");
+            setEditingReview(null);
+            setMessage(editingReview ? "Bạn đã cập nhật đánh giá sản phẩm này." : "Bạn đã đánh giá sản phẩm này.");
         } catch (err: any) {
             setError(err.message || "Không thể gửi đánh giá.");
         } finally {
@@ -168,6 +177,9 @@ export default function ProductReviews({ product }: ProductReviewsProps) {
                         {showForm ? (
                             <ProductReviewForm
                                 isSubmitting={isSubmitting}
+                                initialRating={editingReview?.rating ?? 5}
+                                initialComment={editingReview?.comment ?? ""}
+                                submitLabel={editingReview ? "Cập nhật đánh giá" : "Gửi đánh giá"}
                                 onSubmit={handleSubmitReview}
                             />
                         ) : null}

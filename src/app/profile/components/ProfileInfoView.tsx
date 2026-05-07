@@ -190,18 +190,18 @@ export default function ProfileInfoView() {
     };
 
     return (
-        <section className="rounded-[8px] border border-[#E6E6E6] bg-white">
-            <div className="border-b border-[#E6E6E6] px-5 py-4 md:px-6">
+        <section className="min-w-0 rounded-[8px] border border-[#E6E6E6] bg-white">
+            <div className="border-b border-[#E6E6E6] px-4 py-4 sm:px-5 md:px-6">
                 <h2 className="text-[18px] font-bold text-[#222222]">Hồ sơ cá nhân</h2>
                 <p className="mt-1 text-[13px] text-[#565959]">
                     Quản lý thông tin định danh, liên hệ và ảnh đại diện.
                 </p>
             </div>
 
-            <div className="p-5 md:p-6">
+            <div className="p-4 sm:p-5 md:p-6">
                 {!isVendor && !hasVendorApplication && <VendorRegisterBanner />}
 
-                <div className="mb-6 flex flex-col gap-5 rounded-[8px] border border-[#E6E6E6] bg-[#FAFAFA] p-4 sm:flex-row sm:items-center">
+                <div className="mb-6 flex min-w-0 flex-col gap-5 rounded-[8px] border border-[#E6E6E6] bg-[#FAFAFA] p-4 sm:flex-row sm:items-center">
                     <button
                         type="button"
                         onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}

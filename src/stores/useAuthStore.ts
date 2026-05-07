@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
-import { resetBrokenSupabaseSession, supabase } from '@/lib/supabase';
+import { isInvalidRefreshTokenError, resetBrokenSupabaseSession, supabase } from '@/lib/supabase';
 
 interface AuthState {
   session: Session | null;
@@ -25,9 +25,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSyncing: (isSyncing) => set({ isSyncing }),
   signOut: async () => {
     try {
-      await supabase.auth.signOut();
-    } catch {
-      await resetBrokenSupabaseSession();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          await resetBrokenSupabaseSession();
+        } else {
+          console.warn("[AuthStore] Sign out failed:", error.message);
+        }
+      }
+    } catch (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        await resetBrokenSupabaseSession();
+      } else {
+        console.warn("[AuthStore] Sign out failed:", error);
+      }
     }
     set({ session: null, user: null, profile: null, isInitialized: true, isSyncing: false });
 

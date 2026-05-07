@@ -81,6 +81,8 @@ export type VendorOrder = {
     reputationScore: number;
     penaltyPoints: number;
     verificationStatus: string;
+    reviewSummary?: VendorRenterReviewSummary;
+    reviews?: VendorRenterReview[];
   };
   address: {
     recipientName: string;
@@ -110,6 +112,20 @@ export type VendorOrder = {
   }>;
 };
 
+export type VendorRenterReview = {
+  reviewId: string;
+  orderId: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  shopName: string;
+};
+
+export type VendorRenterReviewSummary = {
+  averageRating: number;
+  count: number;
+};
+
 export type VendorEarlyReturnRequest = {
   requestId: string;
   orderId: string;
@@ -136,6 +152,8 @@ export type VendorEarlyReturnRequest = {
     phoneNumber: string | null;
     reputationScore: number;
     penaltyPoints: number;
+    reviewSummary?: VendorRenterReviewSummary;
+    reviews?: VendorRenterReview[];
   };
   items: Array<{
     orderItemId: string;

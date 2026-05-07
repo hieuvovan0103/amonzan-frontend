@@ -1,18 +1,33 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import ProductReviewStars from "./ProductReviewStars";
 
 type ProductReviewFormProps = {
     isSubmitting: boolean;
+    initialRating?: number;
+    initialComment?: string;
+    submitLabel?: string;
     onSubmit: (payload: { rating: number; comment: string }) => Promise<void>;
 };
 
-export default function ProductReviewForm({ isSubmitting, onSubmit }: ProductReviewFormProps) {
-    const [rating, setRating] = useState(5);
-    const [comment, setComment] = useState("");
+export default function ProductReviewForm({
+    isSubmitting,
+    initialRating = 5,
+    initialComment = "",
+    submitLabel = "Gửi đánh giá",
+    onSubmit,
+}: ProductReviewFormProps) {
+    const [rating, setRating] = useState(initialRating);
+    const [comment, setComment] = useState(initialComment);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        setRating(initialRating);
+        setComment(initialComment);
+        setError("");
+    }, [initialRating, initialComment]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -29,8 +44,6 @@ export default function ProductReviewForm({ isSubmitting, onSubmit }: ProductRev
         }
 
         await onSubmit({ rating, comment });
-        setComment("");
-        setRating(5);
     };
 
     return (
@@ -68,7 +81,7 @@ export default function ProductReviewForm({ isSubmitting, onSubmit }: ProductRev
                 className="mt-4 inline-flex items-center gap-2 rounded-[4px] bg-[#FFD814] px-4 py-2 text-[14px] font-bold text-[#222222] hover:bg-[#F7CA00] disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Gửi đánh giá
+                {submitLabel}
             </button>
         </form>
     );

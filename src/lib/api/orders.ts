@@ -32,6 +32,15 @@ export type PaidOrder = {
     completedAt: string | null;
     earlyReturnRequest: EarlyReturnRequest | null;
     returnRecord: ReturnRecord | null;
+    renterReview: {
+        reviewId: string;
+        orderId: string | null;
+        rating: number;
+        comment: string | null;
+        createdAt: string;
+        shopName: string;
+        reportStatus?: string | null;
+    } | null;
     address: {
         recipientName: string;
         phoneNumber: string;

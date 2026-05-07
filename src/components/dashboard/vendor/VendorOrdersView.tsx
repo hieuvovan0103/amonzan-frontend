@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2, RefreshCw, Star, X } from "lucide-react";
+import { AlertTriangle, Check, ImageIcon, Loader2, PackageCheck, RefreshCw, Star, X } from "lucide-react";
 import {
     approveEarlyReturn,
     approveVendorOrder,
@@ -10,6 +10,7 @@ import {
     getVendorOrders,
     rejectEarlyReturn,
     rejectVendorOrder,
+    reviewRenter,
 } from "@/lib/api/vendor";
 import type { VendorEarlyReturnRequest, VendorOrder } from "@/types/vendor";
 
@@ -25,6 +26,46 @@ function formatDate(value: string) {
     }).format(new Date(value));
 }
 
+function RenterReviewHistory({
+    summary,
+    reviews,
+}: {
+    summary?: { averageRating: number; count: number };
+    reviews?: Array<{ reviewId: string; rating: number; comment: string | null; shopName: string; createdAt: string }>;
+}) {
+    const safeReviews = reviews ?? [];
+
+    return (
+        <div className="mt-3 rounded-xl border border-[#E6E6E6] bg-white p-3 text-[12px]">
+            <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-[#222222]">Lịch sử đánh giá người thuê</span>
+                <span className="inline-flex items-center gap-1 font-bold text-[#B12704]">
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    {Number(summary?.averageRating ?? 0).toFixed(1)} ({summary?.count ?? 0})
+                </span>
+            </div>
+            {safeReviews.length ? (
+                <div className="mt-2 space-y-2">
+                    {safeReviews.slice(0, 3).map((review) => (
+                        <div key={review.reviewId} className="rounded-lg bg-[#FAFAFA] p-2 text-[#565959]">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-[#222222]">{review.shopName}</span>
+                                <span className="inline-flex items-center gap-1 text-[#B12704]">
+                                    <Star className="h-3 w-3 fill-current" />
+                                    {review.rating}/5
+                                </span>
+                            </div>
+                            {review.comment ? <p className="mt-1 line-clamp-2">{review.comment}</p> : null}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="mt-2 text-[#565959]">Chưa có cửa hàng nào đánh giá người thuê này.</p>
+            )}
+        </div>
+    );
+}
+
 export default function VendorOrdersView() {
     const [orders, setOrders] = useState<VendorOrder[]>([]);
     const [earlyReturnRequests, setEarlyReturnRequests] = useState<VendorEarlyReturnRequest[]>([]);
@@ -34,6 +75,11 @@ export default function VendorOrdersView() {
     const [error, setError] = useState<string | null>(null);
     const [rejectingEarlyReturnId, setRejectingEarlyReturnId] = useState<string | null>(null);
     const [earlyReturnRejectReason, setEarlyReturnRejectReason] = useState("");
+    const [returnReceiveRequest, setReturnReceiveRequest] = useState<VendorEarlyReturnRequest | null>(null);
+    const [returnConditionNote, setReturnConditionNote] = useState("Hàng trả bình thường.");
+    const [returnDamaged, setReturnDamaged] = useState(false);
+    const [renterReviewRating, setRenterReviewRating] = useState(5);
+    const [renterReviewComment, setRenterReviewComment] = useState("");
 
     const loadOrders = useCallback(async () => {
         setIsLoading(true);
@@ -88,16 +134,16 @@ export default function VendorOrdersView() {
             if (action === "approve") {
                 await approveEarlyReturn(request.orderId);
             } else if (action === "reject") {
-                const reason = window.prompt("Nhập lý do từ chối yêu cầu trả sớm:");
-                if (!reason) return;
-                await rejectEarlyReturn(request.orderId, reason);
+                setRejectingEarlyReturnId(request.orderId);
+                setEarlyReturnRejectReason("");
+                return;
             } else {
-                const note = window.prompt("Ghi chú tình trạng hàng trả:", "Hàng trả bình thường.");
-                await confirmReturnReceived(request.orderId, {
-                    returnedAt: new Date().toISOString(),
-                    returnConditionNote: note || "",
-                    damaged: false,
-                });
+                setReturnReceiveRequest(request);
+                setReturnConditionNote("Hàng trả bình thường.");
+                setReturnDamaged(false);
+                setRenterReviewRating(5);
+                setRenterReviewComment("");
+                return;
             }
 
             await loadOrders();
@@ -125,6 +171,55 @@ export default function VendorOrdersView() {
             await loadOrders();
         } catch (err: any) {
             setError(err?.message || "Không thể từ chối yêu cầu trả sớm.");
+        } finally {
+            setActionOrderId(null);
+        }
+    };
+
+    const openReturnReceiveModal = (request: VendorEarlyReturnRequest) => {
+        setReturnReceiveRequest(request);
+        setReturnConditionNote("Hàng trả bình thường.");
+        setReturnDamaged(false);
+        setRenterReviewRating(5);
+        setRenterReviewComment("");
+        setError(null);
+    };
+
+    const closeReturnReceiveModal = () => {
+        if (actionOrderId === returnReceiveRequest?.orderId) return;
+        setReturnReceiveRequest(null);
+        setReturnConditionNote("Hàng trả bình thường.");
+        setReturnDamaged(false);
+        setRenterReviewRating(5);
+        setRenterReviewComment("");
+    };
+
+    const handleConfirmReturnReceived = async () => {
+        if (!returnReceiveRequest) return;
+
+        setActionOrderId(returnReceiveRequest.orderId);
+        setError(null);
+
+        try {
+            await confirmReturnReceived(returnReceiveRequest.orderId, {
+                returnedAt: new Date().toISOString(),
+                returnConditionNote: returnConditionNote.trim(),
+                damaged: returnDamaged,
+            });
+
+            await reviewRenter(returnReceiveRequest.orderId, {
+                rating: renterReviewRating,
+                comment: renterReviewComment.trim(),
+            });
+
+            setReturnReceiveRequest(null);
+            setReturnConditionNote("Hàng trả bình thường.");
+            setReturnDamaged(false);
+            setRenterReviewRating(5);
+            setRenterReviewComment("");
+            await loadOrders();
+        } catch (err: any) {
+            setError(err?.message || "Không thể xác nhận đã nhận hàng hoàn trả.");
         } finally {
             setActionOrderId(null);
         }
@@ -223,6 +318,10 @@ export default function VendorOrdersView() {
                                         <div className="mt-1 font-bold text-[#B12704]">
                                             Hoàn dự kiến: {formatPrice(request.estimatedRefundAmount)}đ
                                         </div>
+                                        <RenterReviewHistory
+                                            summary={request.renter.reviewSummary}
+                                            reviews={request.renter.reviews}
+                                        />
                                     </div>
                                 </div>
 
@@ -341,7 +440,7 @@ export default function VendorOrdersView() {
                                             <button
                                                 type="button"
                                                 disabled={actionOrderId === request.orderId}
-                                                onClick={() => handleEarlyReturnAction(request, "received")}
+                                                onClick={() => openReturnReceiveModal(request)}
                                                 className="w-full rounded-xl border border-[#007185] bg-white px-3 py-2 text-[13px] font-bold text-[#007185] hover:bg-[#F0F8FF] disabled:opacity-60"
                                             >
                                                 Xác nhận đã nhận hàng
@@ -389,6 +488,10 @@ export default function VendorOrdersView() {
                                     <div className="mt-1 text-[#565959]">
                                         Điểm phạt: {order.renter.penaltyPoints.toFixed(1)}
                                     </div>
+                                    <RenterReviewHistory
+                                        summary={order.renter.reviewSummary}
+                                        reviews={order.renter.reviews}
+                                    />
                                 </div>
                             </div>
 
@@ -459,6 +562,221 @@ export default function VendorOrdersView() {
                     ))}
                 </div>
             )}
+
+            {returnReceiveRequest ? (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-5">
+                    <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div className="flex items-start justify-between gap-4 border-b border-[#E6E6E6] px-5 py-4">
+                            <div className="flex min-w-0 gap-3">
+                                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#E6F4F1] text-[#007185]">
+                                    <PackageCheck className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h2 className="text-[18px] font-bold text-[#222222]">
+                                        Xác nhận đã nhận hàng hoàn trả
+                                    </h2>
+                                    <p className="mt-1 text-[13px] text-[#565959]">
+                                        Kiểm tra thông tin, ảnh hiện trạng và ghi chú trước khi hoàn tất đơn #
+                                        {returnReceiveRequest.orderId.slice(0, 8)}.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeReturnReceiveModal}
+                                disabled={actionOrderId === returnReceiveRequest.orderId}
+                                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-[#D5D9D9] bg-white text-[#565959] hover:bg-[#F7F7F7] disabled:opacity-60"
+                                aria-label="Đóng"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto px-5 py-4">
+                            <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+                                <div className="space-y-4">
+                                    <div className="grid gap-3 rounded-xl border border-[#E6E6E6] bg-[#FAFAFA] p-4 text-[13px] sm:grid-cols-2">
+                                        <div>
+                                            <div className="text-[#565959]">Người thuê</div>
+                                            <div className="mt-1 font-bold text-[#222222]">
+                                                {returnReceiveRequest.renter.fullName}
+                                            </div>
+                                            <div className="mt-1 text-[#565959]">
+                                                {returnReceiveRequest.renter.phoneNumber ||
+                                                    returnReceiveRequest.renter.email ||
+                                                    "Không có liên hệ"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[#565959]">Thời gian trả</div>
+                                            <div className="mt-1 font-bold text-[#222222]">
+                                                Khách muốn trả: {formatDate(returnReceiveRequest.requestedReturnAt)}
+                                            </div>
+                                            <div className="mt-1 text-[#565959]">
+                                                Hạn gốc: {formatDate(returnReceiveRequest.originalRentalEnd)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h3 className="text-[14px] font-bold text-[#222222]">Sản phẩm hoàn trả</h3>
+                                        {returnReceiveRequest.items.map((item) => (
+                                            <div
+                                                key={item.orderItemId}
+                                                className="flex gap-3 rounded-xl border border-[#E6E6E6] bg-white p-3"
+                                            >
+                                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#E6E6E6] bg-[#F7F7F7]">
+                                                    {item.productImage ? (
+                                                        <img
+                                                            src={item.productImage}
+                                                            alt={item.productName}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : null}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-[#222222]">{item.productName}</div>
+                                                    <div className="mt-1 text-[13px] text-[#565959]">
+                                                        {item.variantName || "Mặc định"} x {item.quantity}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <label className="block">
+                                        <span className="mb-2 block text-[14px] font-bold text-[#222222]">
+                                            Ghi chú tình trạng hàng trả
+                                        </span>
+                                        <textarea
+                                            value={returnConditionNote}
+                                            onChange={(event) => setReturnConditionNote(event.target.value)}
+                                            rows={4}
+                                            maxLength={1000}
+                                            className="w-full resize-none rounded-xl border border-[#D5D9D9] bg-white px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#007185] focus:ring-1 focus:ring-[#007185]"
+                                            placeholder="Ví dụ: Hàng trả đầy đủ phụ kiện, không có hư hỏng."
+                                        />
+                                    </label>
+
+                                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#F0C36D] bg-[#FFF8E1] p-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={returnDamaged}
+                                            onChange={(event) => setReturnDamaged(event.target.checked)}
+                                            className="mt-1 h-4 w-4 rounded border-[#D5D9D9] text-[#B12704] focus:ring-[#B12704]"
+                                        />
+                                        <span className="min-w-0 text-[13px] text-[#565959]">
+                                            <span className="block font-bold text-[#222222]">
+                                                Hàng có hư hỏng hoặc cần xử lý thêm
+                                            </span>
+                                            Bật tùy chọn này nếu shop cần ghi nhận tình trạng bất thường khi nhận hàng.
+                                        </span>
+                                    </label>
+
+                                    <div className="rounded-xl border border-[#E6E6E6] bg-white p-4">
+                                        <div className="text-[14px] font-bold text-[#222222]">
+                                            Đánh giá người thuê
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-1 text-[#FFA41C]">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onClick={() => setRenterReviewRating(star)}
+                                                    className="rounded p-1 focus:outline-none focus:ring-2 focus:ring-[#FFA41C]"
+                                                    aria-label={`Chọn ${star} sao`}
+                                                >
+                                                    <Star
+                                                        className={`h-5 w-5 fill-current ${
+                                                            star <= renterReviewRating ? "" : "text-[#D5D9D9]"
+                                                        }`}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <textarea
+                                            value={renterReviewComment}
+                                            onChange={(event) => setRenterReviewComment(event.target.value)}
+                                            rows={3}
+                                            maxLength={1000}
+                                            className="mt-3 w-full resize-none rounded-xl border border-[#D5D9D9] bg-white px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#007185] focus:ring-1 focus:ring-[#007185]"
+                                            placeholder="Ví dụ: Khách trả hàng đúng hẹn, giao tiếp tốt, sản phẩm còn nguyên trạng."
+                                        />
+                                    </div>
+                                </div>
+
+                                <aside className="space-y-3">
+                                    <div className="rounded-xl border border-[#E6E6E6] bg-[#F7F7F7] p-4 text-[13px]">
+                                        <div className="text-[#565959]">Hoàn dự kiến</div>
+                                        <div className="mt-1 text-[18px] font-bold text-[#B12704]">
+                                            {formatPrice(returnReceiveRequest.estimatedRefundAmount)}đ
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-xl border border-[#E6E6E6] bg-[#FAFAFA] p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-[14px] font-bold text-[#222222]">
+                                            <ImageIcon className="h-4 w-4 text-[#565959]" />
+                                            Ảnh khách gửi
+                                        </div>
+                                        {returnReceiveRequest.conditionImageUrls?.length ? (
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {returnReceiveRequest.conditionImageUrls.map((imageUrl, index) => (
+                                                    <a
+                                                        key={`${imageUrl}-${index}`}
+                                                        href={imageUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="block aspect-square overflow-hidden rounded-lg border border-[#E6E6E6] bg-white"
+                                                    >
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={`Ảnh hiện trạng ${index + 1}`}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border border-dashed border-[#D5D9D9] bg-white p-4 text-center text-[13px] text-[#565959]">
+                                                Khách chưa gửi ảnh hiện trạng.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 rounded-xl border border-[#E6E6E6] bg-white p-3 text-[12px] text-[#565959]">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#B12704]" />
+                                        Sau khi xác nhận, hệ thống sẽ ghi nhận shop đã nhận hàng hoàn trả cho yêu cầu này.
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-2 border-t border-[#E6E6E6] bg-[#FAFAFA] px-5 py-4 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={closeReturnReceiveModal}
+                                disabled={actionOrderId === returnReceiveRequest.orderId}
+                                className="rounded-xl border border-[#D5D9D9] bg-white px-4 py-2 text-[14px] font-bold text-[#222222] hover:bg-[#F7F7F7] disabled:opacity-60"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmReturnReceived}
+                                disabled={actionOrderId === returnReceiveRequest.orderId}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#007185] bg-[#007185] px-4 py-2 text-[14px] font-bold text-white hover:bg-[#005F6B] disabled:opacity-60"
+                            >
+                                {actionOrderId === returnReceiveRequest.orderId ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <PackageCheck className="h-4 w-4" />
+                                )}
+                                Xác nhận đã nhận hàng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </section>
     );
 }

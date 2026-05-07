@@ -4,6 +4,7 @@ import {
     CreditCard,
     Heart,
     MapPin,
+    Star,
     UserCircle,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -33,6 +34,12 @@ const items: Array<{
         icon: ClipboardList,
     },
     {
+        tab: "my_reviews",
+        label: "Đánh giá về tôi",
+        description: "Nhận xét từ các shop",
+        icon: Star,
+    },
+    {
         tab: "favorites",
         label: "Yêu thích",
         description: "Sản phẩm đã lưu",
@@ -60,8 +67,8 @@ const items: Array<{
 
 export default function ProfileSidebar({ activeTab, onChangeTab }: ProfileSidebarProps) {
     return (
-        <aside className="lg:sticky lg:top-[88px] lg:self-start">
-            <nav className="flex gap-2 overflow-x-auto rounded-[8px] border border-[#D5D9D9] bg-white p-2 shadow-sm lg:flex-col lg:overflow-visible">
+        <aside className="min-w-0 lg:sticky lg:top-[88px] lg:self-start">
+            <nav className="flex max-w-full gap-2 overflow-x-auto rounded-[8px] border border-[#D5D9D9] bg-white p-2 shadow-sm lg:flex-col lg:overflow-visible">
                 {items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.tab;
@@ -71,7 +78,7 @@ export default function ProfileSidebar({ activeTab, onChangeTab }: ProfileSideba
                             key={item.tab}
                             type="button"
                             onClick={() => onChangeTab(item.tab)}
-                            className={`flex min-w-[170px] items-center gap-3 rounded-[6px] px-3 py-3 text-left transition-colors lg:min-w-0 ${
+                            className={`flex min-w-[150px] max-w-[190px] flex-shrink-0 items-center gap-3 rounded-[6px] px-3 py-3 text-left transition-colors sm:min-w-[170px] lg:min-w-0 lg:max-w-none lg:flex-shrink ${
                                 isActive
                                     ? "bg-[#FFF8E1] text-[#B12704]"
                                     : "text-[#222222] hover:bg-[#F7F7F7]"

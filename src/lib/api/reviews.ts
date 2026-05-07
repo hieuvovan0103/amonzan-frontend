@@ -18,6 +18,7 @@ export type ProductReviewEligibility = {
   eligible: boolean;
   alreadyReviewed: boolean;
   orderId: string | null;
+  review: ProductReview | null;
   message: string | null;
 };
 
@@ -31,6 +32,9 @@ export type AdminReview = {
   created_at: string;
   is_hidden: boolean;
   hidden_at: string | null;
+  reported_at: string | null;
+  report_reason: string | null;
+  report_status: string | null;
   reviewer_name: string;
   reviewer_email: string | null;
   product: {
@@ -114,6 +118,23 @@ export async function createProductReview(
   return mapReview((await response.json()) as ReviewApi);
 }
 
+export async function updateMyProductReview(
+  productId: string,
+  payload: { rating: number; comment?: string },
+) {
+  const response = await fetchWithAuth(`/products/${productId}/reviews/mine`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể cập nhật đánh giá.");
+  }
+
+  return mapReview((await response.json()) as ReviewApi);
+}
+
 export async function getAdminReviews() {
   const response = await fetchWithAuth("/admin/reviews");
 
@@ -145,4 +166,18 @@ export async function deleteAdminReview(reviewId: string) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData?.message || "Không thể xóa đánh giá.");
   }
+}
+
+export async function reportReview(reviewId: string, reason: string) {
+  const response = await fetchWithAuth(`/reviews/${reviewId}/report`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể báo cáo đánh giá.");
+  }
+
+  return response.json();
 }

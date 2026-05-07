@@ -10,6 +10,7 @@ import type {
     ProductDetail,
     ProductSizeOption,
 } from "@/lib/api/products";
+import { calculateRentalDays } from "@/lib/rental-days";
 
 type ProductInfoProps = {
     product: ProductDetail;
@@ -22,16 +23,6 @@ type ProductInfoProps = {
     availability?: ProductAvailability | null;
     isCheckingAvailability?: boolean;
 };
-
-function calculateRentalDays(start: string, end: string) {
-    if (!start || !end || end <= start) return 0;
-
-    return Math.ceil(
-        (new Date(`${end}T00:00:00.000Z`).getTime() -
-            new Date(`${start}T00:00:00.000Z`).getTime()) /
-            86_400_000,
-    );
-}
 
 export default function ProductInfo({
     product,
@@ -59,6 +50,13 @@ export default function ProductInfo({
     const displayedPrice = rentalDays > 0
         ? formatPrice(selectedPriceValue * rentalDays)
         : formatPrice(selectedPriceValue);
+    const getDisplayedStock = (size: ProductSizeOption) => {
+        if (selectedSize?.variantId === size.variantId && availability) {
+            return availability.availableStock;
+        }
+
+        return size.availableStock;
+    };
 
     return (
         <>
@@ -125,7 +123,7 @@ export default function ProductInfo({
                             >
                                 {size.name}
                                 <span className="ml-1 text-[11px] text-[#565959]">
-                                    ({size.availableStock})
+                                    ({getDisplayedStock(size)})
                                 </span>
                             </button>
                         ))}

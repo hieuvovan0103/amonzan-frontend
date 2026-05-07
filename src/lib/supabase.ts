@@ -2,7 +2,14 @@ import { createClient } from '@supabase/supabase-js'
 
 export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  },
 )
 
 export function isInvalidRefreshTokenError(error: unknown) {
@@ -29,7 +36,10 @@ export function clearSupabaseAuthStorage() {
 
 export async function resetBrokenSupabaseSession() {
   try {
-    await supabase.auth.signOut({ scope: "local" });
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error && !isInvalidRefreshTokenError(error)) {
+      console.warn("[supabase] Unable to sign out locally:", error.message);
+    }
   } catch {
     clearSupabaseAuthStorage();
   }

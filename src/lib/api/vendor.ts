@@ -254,3 +254,20 @@ export async function confirmReturnReceived(
 
   return response.json();
 }
+
+export async function reviewRenter(
+  orderId: string,
+  payload: { rating: number; comment?: string },
+) {
+  const response = await fetchWithAuth(`/orders/vendor/${orderId}/renter-review`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || "Không thể lưu đánh giá người thuê.");
+  }
+
+  return response.json();
+}

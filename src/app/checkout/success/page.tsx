@@ -112,11 +112,11 @@ export default async function CheckoutSuccessPage({
                             className="flex items-center justify-center gap-2 rounded-md border border-[#F0C14B] bg-[#FFD814] px-5 py-2.5 text-[14px] font-bold text-[#111111] shadow-sm transition-colors hover:bg-[#F0C14B]"
                         >
                             <Package className="h-4 w-4" />
-                            Xem tài khoản
+                            Xem đơn hàng
                         </Link>
 
                         <Link
-                            href="/products"
+                            href="/profile?tab=my_orders"
                             className="flex items-center justify-center gap-2 rounded-md border border-[#D5D9D9] bg-white px-5 py-2.5 text-[14px] font-bold text-[#222222] shadow-sm transition-colors hover:bg-[#F7F7F7]"
                         >
                             <ShoppingBag className="h-4 w-4 text-[#565959]" />
